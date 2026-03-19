@@ -76,5 +76,16 @@ Visit `http://localhost:8000` to start searching.
 - **Admin Access**: Protected by token-based `HttpOnly` cookie authentication.
 - **Privacy First**: Mnemonic acts as a pass-through processor; no external AI APIs are used. All synthesis happens locally on your hardware.
 
+## Roadmap
+
+The following ideas represent a steady evolution of the core search and synthesis experience.
+
+- **Engine Expansion**: Integration of additional search providers (Brave Search, Bing, Google API) for higher result diversity.
+- **Export to Markdown**: One-click download of your synthesized findings and pinned references into a clean document.
+- **Advanced Filtering**: UI controls to filter results by domain, date, or content category (e.g., Code, News, Discussion).
+- **Custom Synthesis Styles**: Choice between different summarization modes (e.g., Deep Research, Quick Summary, Bullet Points).
+- **Admin Analytics**: Improved dashboard to visualize semantic memory trends and vector cluster patterns.
+- **UI/UX Polish**: Continued aesthetic refinements, smoother transitions, and deeper mobile optimization.
+
 ## License
 MIT License - See [LICENSE](LICENSE) for details.
