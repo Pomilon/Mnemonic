@@ -1,4 +1,5 @@
 import hashlib
+from typing import List
 from src.mnemonic.aggregator.schema import SearchResult, SourceType, ContentType
 
 from src.mnemonic.config import config
@@ -7,7 +8,7 @@ class MockSearchClient:
     def __init__(self):
         self.name = "mock"
 
-    async def search(self, query: str, max_results: int = config.MAX_RESULTS_PER_ENGINE) -> List[SearchResult]:
+    async def search(self, query: str, max_results: int = config.MAX_RESULTS_PER_ENGINE, offset: int = 0) -> List[SearchResult]:
         results = [
             SearchResult(
                 id=hashlib.md5(f"mock1{query}".encode()).hexdigest(),

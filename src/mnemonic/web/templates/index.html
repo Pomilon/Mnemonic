@@ -419,8 +419,15 @@
                             </div>
                         </div>
                         
-                        <div id="summary-output" class="hidden mb-5 p-5 bg-cyan-500/5 border border-cyan-500/10 rounded-xl text-sm text-slate-200 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            <!-- Summary content -->
+                        <div id="summary-output" class="group hidden mb-5 p-5 bg-cyan-500/5 border border-cyan-500/10 rounded-xl text-sm text-slate-200 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
+                            <button 
+                                onclick="copySummary()" 
+                                class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all p-2 bg-slate-900/80 rounded-lg text-slate-500 hover:text-cyan-400 border border-slate-800 hover:border-cyan-500/30"
+                                title="Copy to clipboard"
+                            >
+                                <i data-lucide="copy" size="14"></i>
+                            </button>
+                            <div id="summary-content"></div>
                         </div>
 
                         <div class="relative">
@@ -572,6 +579,7 @@
             
             const btn = document.getElementById('synth-btn');
             const output = document.getElementById('summary-output');
+            const content = document.getElementById('summary-content');
             const originalContent = btn.innerHTML;
             
             btn.disabled = true;
@@ -588,7 +596,7 @@
                 });
                 const summary = await response.text();
                 
-                output.innerText = summary;
+                content.innerText = summary;
                 output.classList.remove('hidden');
                 output.classList.add('animate-in', 'fade-in', 'slide-in-from-top-2');
                 
@@ -602,6 +610,13 @@
                 btn.innerHTML = originalContent;
                 lucide.createIcons();
             }
+        }
+
+        function copySummary() {
+            const content = document.getElementById('summary-content').innerText;
+            navigator.clipboard.writeText(content).then(() => {
+                appendLocalLog("Synthesis copied to clipboard.");
+            });
         }
     </script>
 </body>
