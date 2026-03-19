@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mnemonic - Semantic Meta-Search</title>
+    <link rel="icon" href="data:,">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+            grid-auto-rows: minmax(200px, auto);
+            grid-auto-flow: dense;
+        }
+
+        @media (min-width: 640px) {
+            .bento-grid {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            }
+        }
+        
+        @keyframes pulse-cyan {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+            50% { box-shadow: 0 0 20px 2px rgba(34, 211, 238, 0.15); }
+        }
+        .search-focus:focus-within {
+            animation: pulse-cyan 3s infinite;
+        }
+
+        *:focus { outline: none !important; }
+
+        .scroll-container { height: calc(100vh - 73px); margin-top: 73px; }
+        @media (max-width: 640px) {
+            .scroll-container { height: calc(100vh - 120px); margin-top: 120px; }
+        }
+        
+        .logo-glow { filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.4)); }
+        
+        .telemetry-line {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-4px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* 
+           STABLE POSITIONING SYSTEM
+           Logo and Search Bar are fixed to allow smooth interpolation.
+        */
+        
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 73px;
+            z-index: 50;
+            background-color: transparent;
+            backdrop-filter: none;
+            border-bottom: 1px solid transparent;
+            transition: all 0.8s ease;
+            pointer-events: none;
+        }
+
+        #main-container.searching-mode header {
+            background-color: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(30, 41, 59, 1);
+            pointer-events: auto;
+        }
+
+        @media (max-width: 640px) {
+            #main-container.searching-mode header {
+                height: 120px;
+            }
+        }
+
+        .logo-section {
+            position: fixed;
+            z-index: 60;
+            display: flex;
+            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+            cursor: pointer;
+            
+            /* Landing State: Centered */
+            top: 25vh;
+            left: 50%;
+            transform: translateX(-50%);
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        #main-container.searching-mode .logo-section {
+            top: 18px;
+            left: 24px;
+            transform: translateX(0);
+            flex-direction: row;
+            gap: 1rem;
+            width: auto;
+        }
+
+        @media (max-width: 640px) {
+            #main-container.searching-mode .logo-section {
+                top: 12px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+
+        .logo-section svg {
+            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+            width: 70px;
+            height: 70px;
+        }
+
+        @media (min-width: 640px) {
+            .logo-section svg {
+                width: 90px;
+                height: 90px;
+            }
+        }
+
+        #main-container.searching-mode .logo-section svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .logo-text {
+            font-weight: 900;
+            color: #f1f5f9;
+            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+            
+            /* Landing State */
+            font-size: 2.2rem;
+            letter-spacing: 0.3em;
+            text-align: center;
+            line-height: 1;
+        }
+
+        @media (min-width: 640px) {
+            .logo-text {
+                font-size: 3.5rem;
+                letter-spacing: 0.4em;
+            }
+        }
+
+        #main-container.searching-mode .logo-text {
+            font-size: 1.125rem;
+            letter-spacing: 0.2em;
+            text-align: left;
+        }
+
+        .logo-subtext {
+            font-weight: 700;
+            color: rgba(34, 211, 238, 0.6);
+            text-transform: uppercase;
+            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+            
+            /* Landing State */
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            margin-top: 0.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .logo-subtext {
+                font-size: 0.875rem;
+                letter-spacing: 0.3em;
+                margin-top: 0.75rem;
+            }
+        }
+
+        #main-container.searching-mode .logo-subtext {
+            font-size: 9px;
+            margin-top: 0.1rem;
+        }
+
+        .search-form-container {
+            position: fixed;
+            z-index: 60;
+            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+            
+            /* Landing State */
+            top: 55vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 650px;
+            padding: 0 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .search-form-container {
+                width: calc(100% - 2rem);
+                left: 1rem;
+                transform: none;
+                padding: 0;
+            }
+        }
+
+        #main-container.searching-mode .search-form-container {
+            top: 14px;
+            left: 280px;
+            transform: translateX(0);
+            max-width: 600px;
+            padding: 0;
+        }
+
+        @media (max-width: 640px) {
+            #main-container.searching-mode .search-form-container {
+                top: 60px;
+                left: 1rem;
+                width: calc(100% - 2rem);
+            }
+        }
+
+        .search-input {
+            width: 100%;
+            border: 1px solid rgba(30, 41, 59, 1);
+            border-radius: 1rem;
+            color: #f1f5f9;
+            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+            
+            /* Landing State */
+            padding: 1rem 3rem;
+            font-size: 1rem;
+            background-color: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (min-width: 640px) {
+            .search-input {
+                padding: 1.25rem 3.5rem;
+                font-size: 1.1rem;
+            }
+        }
+
+        #main-container.searching-mode .search-input {
+            padding: 0.75rem 3rem;
+            font-size: 0.9rem;
+            background-color: rgba(15, 23, 42, 0.5);
+            box-shadow: none;
+        }
+
+        .user-section {
+            position: fixed;
+            top: 18px;
+            right: 24px;
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        @media (max-width: 640px) {
+            .user-section {
+                display: none; /* Hide on mobile to save space */
+            }
+        }
+
+        #main-container.searching-mode .user-section {
+            opacity: 1;
+            pointer-events: auto;
+            transition-delay: 1s;
+        }
+
+        main {
+            display: none;
+            opacity: 0;
+        }
+
+        #main-container.searching-mode main {
+            display: flex;
+            animation: fadeInUI 1.5s forwards;
+            animation-delay: 0.8s;
+        }
+
+        @keyframes fadeInUI {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-300 h-screen selection:bg-cyan-500/30 overflow-hidden">
+    
+    <div id="main-container" class="landing-mode flex flex-col h-full w-full">
+        
+        <header></header>
+
+        <!-- Logo Section (Fixed Position for Animation) -->
+        <div class="logo-section group" onclick="window.location.reload()">
+            <div class="relative">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-glow group-hover:rotate-12 transition-all duration-500">
+                    <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="2" class="text-slate-800" />
+                    <path d="M30 50C30 38.9543 38.9543 30 50 30C61.0457 30 70 38.9543 70 50C70 61.0457 61.0457 70 50 70C38.9543 70 30 61.0457 30 50Z" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
+                    <path d="M50 20V30" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
+                    <path d="M50 70V80" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
+                    <path d="M20 50H30" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
+                    <path d="M70 50H80" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
+                    <circle cx="50" cy="50" r="8" fill="white" class="animate-pulse shadow-xl shadow-white/50" />
+                    <defs>
+                        <linearGradient id="logo-grad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#22D3EE" />
+                            <stop offset="1" stop-color="#818CF8" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="absolute -inset-1 bg-cyan-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="logo-text">MNEMONIC</span>
+                <span class="logo-subtext">Semantic Engine</span>
+            </div>
+        </div>
+
+        <!-- Search Bar (Fixed Position for Animation) -->
+        <div class="search-form-container">
+            <form hx-post="/search" hx-target="#results-stream" hx-indicator="#search-loading" 
+                    class="relative group search-focus"
+                    onsubmit="triggerSearchAnimation()">
+                <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-cyan-400 transition-colors">
+                    <i data-lucide="search" size="20"></i>
+                </div>
+                <input
+                    type="text"
+                    name="query"
+                    id="search-input"
+                    placeholder="Query the vectorized web..."
+                    class="search-input bg-slate-900/50 outline-none"
+                    required
+                >
+                <div id="search-loading" class="htmx-indicator absolute inset-y-0 right-5 flex items-center">
+                    <i data-lucide="loader-2" class="animate-spin text-cyan-500" size="20"></i>
+                </div>
+            </form>
+        </div>
+
+        <!-- User Section (Fixed Position for Header) -->
+        <div class="user-section">
+            <div class="flex items-center gap-2.5 px-4 py-2 bg-slate-900 border border-slate-800 rounded-full shadow-inner">
+                <div class="w-2 h-2 rounded-full {{ 'bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.6)]' if ll_available else 'bg-slate-700' }}"></div>
+                <span class="text-[10px] font-bold uppercase tracking-widest {{ 'text-slate-300' if ll_available else 'text-slate-600' }}">
+                    {{ 'LLM Online' if ll_available else 'LLM Offline' }}
+                </span>
+            </div>
+            <button class="text-slate-500 hover:text-cyan-400 transition-colors"><i data-lucide="settings" size="20"></i></button>
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-indigo-500/20 border border-white/10">P</div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex overflow-hidden">
+            
+            <!-- Left: Results Stream -->
+            <section id="exploration-pane" class="flex-1 overflow-y-auto p-6 scroll-smooth scroll-container bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.5),transparent)]">
+                <div id="results-stream" class="max-w-7xl mx-auto h-full">
+                    <!-- Results will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Right: Synthesis Canvas & Telemetry -->
+            <aside class="w-[480px] border-l border-slate-800 bg-slate-950 flex flex-col hidden xl:flex">
+                
+                <!-- Canvas -->
+                <div class="flex-1 flex flex-col overflow-hidden border-b border-slate-800">
+                    <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/30">
+                        <h2 class="font-bold text-slate-200 flex items-center gap-3 uppercase tracking-[0.1em] text-xs">
+                            <i data-lucide="layers-3" size="18" class="text-indigo-400"></i>
+                            Synthesis Workspace
+                        </h2>
+                        <span id="pin-count" class="text-[9px] font-black text-slate-400 bg-slate-800 px-3 py-1 rounded-lg uppercase tracking-widest border border-slate-700">0 Items</span>
+                    </div>
+
+                    <div id="canvas-items" class="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-950/40">
+                        <div id="empty-canvas" class="h-full flex flex-col items-center justify-center text-center opacity-30 px-10">
+                            <i data-lucide="pin" size="48" class="mb-4 text-slate-600"></i>
+                            <p class="text-xs font-medium uppercase tracking-widest leading-loose">Pin search nodes here to build context for LLM synthesis.</p>
+                        </div>
+                    </div>
+
+                    <!-- Functional Summarization -->
+                    <div class="p-6 bg-slate-950 border-t border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Context Output</h3>
+                            <div class="flex gap-2">
+                                <button 
+                                    onclick="clearPins()"
+                                    class="text-[9px] font-bold text-slate-500 hover:text-rose-400 px-2 py-1 transition-colors uppercase"
+                                >Clear</button>
+                                <button 
+                                    onclick="synthesizeContext()"
+                                    id="synth-btn"
+                                    class="text-[10px] font-black bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500 hover:text-slate-950 px-4 py-1.5 rounded-lg transition-all flex items-center gap-2 uppercase tracking-widest shadow-lg shadow-cyan-500/5"
+                                >
+                                    <i data-lucide="sparkles" size="12"></i> Synthesize
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="summary-output" class="hidden mb-5 p-5 bg-cyan-500/5 border border-cyan-500/10 rounded-xl text-sm text-slate-200 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <!-- Summary content -->
+                        </div>
+
+                        <div class="relative">
+                            <textarea 
+                                id="notes-area"
+                                placeholder="Draft your synthesized findings..."
+                                class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-5 text-sm text-slate-300 placeholder-slate-700 focus:outline-none focus:border-indigo-500/30 resize-none h-40 transition-all shadow-inner font-light leading-relaxed"
+                            ></textarea>
+                            <div class="absolute bottom-4 right-4 text-[9px] font-bold text-slate-600 uppercase tracking-widest pointer-events-none">Draft Mode</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Terminal -->
+                <div class="h-64 bg-black flex flex-col font-mono border-t border-slate-800" hx-ext="sse" sse-connect="/telemetry">
+                    <div class="px-4 py-2.5 border-b border-slate-900 flex items-center justify-between bg-slate-950">
+                        <div class="flex items-center gap-3">
+                            <div class="flex gap-1.5">
+                                <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+                            </div>
+                            <span class="text-[9px] font-bold text-slate-600 tracking-[0.2em] uppercase">Mnemonic_OS // Telemetry</span>
+                        </div>
+                        <span class="text-[9px] text-cyan-900">V1.0.4-STABLE</span>
+                    </div>
+                    <!-- SSE auto-swap into this div -->
+                    <div id="telemetry-log" sse-swap="log" hx-swap="afterbegin" class="flex-1 overflow-y-auto p-4 space-y-2 text-[10px] selection:bg-cyan-900">
+                        <div class="flex gap-3 text-slate-700 telemetry-line">
+                            <span class="shrink-0">[00:00:00]</span>
+                            <span>Mnemonic Core initialized. Local vector db connected.</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let pinnedNodes = [];
+
+        function triggerSearchAnimation() {
+            const container = document.getElementById('main-container');
+            if (container.classList.contains('landing-mode')) {
+                container.classList.remove('landing-mode');
+                container.classList.add('searching-mode');
+            }
+        }
+
+        // Manual log handling if sse-swap isn't enough or for local events
+        function appendLocalLog(msg) {
+            const logContainer = document.getElementById('telemetry-log');
+            const timeStr = new Date().toLocaleTimeString([], { hour12: false });
+            const logHtml = `<div class="flex gap-3 text-slate-500 telemetry-line"><span class="shrink-0 text-slate-800">[${timeStr}]</span> <span>${msg}</span></div>`;
+            logContainer.insertAdjacentHTML('afterbegin', logHtml);
+        }
+
+        // Initialize icons after HTMX swaps
+        document.body.addEventListener('htmx:afterSwap', function(e) {
+            lucide.createIcons();
+            // Scroll to top of results on new search
+            if (e.detail.target.id === "results-stream" && !e.detail.requestConfig.parameters.offset) {
+                document.getElementById('exploration-pane').scrollTop = 0;
+            }
+        });
+
+        function pinItem(id) {
+            const card = document.getElementById('card-' + id);
+            if (!card) return;
+            const title = card.querySelector('h3').innerText;
+            const snippet = card.querySelector('p')?.innerText || card.querySelector('code')?.innerText || "No content";
+            const iconHtml = card.querySelector('.node-icon').innerHTML;
+            
+            if (pinnedNodes.some(n => n.id === id)) {
+                appendLocalLog(`Node ${id.substring(0,8)} already in workspace.`);
+                return;
+            }
+            
+            pinnedNodes.push({ id, title, snippet });
+            appendLocalLog(`Pinned node: ${title.substring(0,30)}...`);
+            
+            const canvas = document.getElementById('canvas-items');
+            const empty = document.getElementById('empty-canvas');
+            if (empty) empty.style.display = 'none';
+            
+            const pin = document.createElement('div');
+            pin.id = 'pin-' + id;
+            pin.className = "group bg-slate-900 border border-slate-800 rounded-xl p-5 relative hover:border-indigo-500/40 transition-all animate-in zoom-in-95 duration-300 shadow-xl";
+            pin.innerHTML = `
+                <button onclick="unpinItem('${id}')" class="absolute right-4 top-4 p-2 text-slate-600 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors">
+                    <i data-lucide="trash-2" size="14"></i>
+                </button>
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="scale-90 opacity-80">${iconHtml}</div>
+                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Context Node</span>
+                </div>
+                <h4 class="text-sm font-bold text-slate-100 line-clamp-2 pr-8 leading-relaxed">${title}</h4>
+            `;
+            canvas.prepend(pin);
+            lucide.createIcons();
+            updatePinCount();
+        }
+
+        function unpinItem(id) {
+            pinnedNodes = pinnedNodes.filter(n => n.id !== id);
+            const pin = document.getElementById('pin-' + id);
+            if (pin) pin.remove();
+            if (pinnedNodes.length === 0) {
+                document.getElementById('empty-canvas').style.display = 'flex';
+            }
+            updatePinCount();
+            appendLocalLog(`Removed node from workspace.`);
+        }
+
+        function clearPins() {
+            pinnedNodes = [];
+            document.getElementById('canvas-items').innerHTML = '';
+            document.getElementById('empty-canvas').style.display = 'flex';
+            updatePinCount();
+            document.getElementById('summary-output').classList.add('hidden');
+        }
+
+        function updatePinCount() {
+            document.getElementById('pin-count').innerText = pinnedNodes.length + (pinnedNodes.length === 1 ? ' Item' : ' Items');
+        }
+
+        async function synthesizeContext() {
+            if (pinnedNodes.length === 0) return;
+            
+            const btn = document.getElementById('synth-btn');
+            const output = document.getElementById('summary-output');
+            const originalContent = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin" size="12"></i> Reasoning...';
+            lucide.createIcons();
+            
+            const formData = new FormData();
+            formData.append('context', JSON.stringify(pinnedNodes));
+            
+            try {
+                const response = await fetch('/synthesize', {
+                    method: 'POST',
+                    body: formData
+                });
+                const summary = await response.text();
+                
+                output.innerText = summary;
+                output.classList.remove('hidden');
+                output.classList.add('animate-in', 'fade-in', 'slide-in-from-top-2');
+                
+                // Also scroll to bottom of canvas to show output
+                const canvas = document.getElementById('canvas-items').parentElement;
+                canvas.scrollTop = canvas.scrollHeight;
+            } catch (e) {
+                appendLocalLog(`Synthesis error: ${e.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>

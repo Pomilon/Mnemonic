@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+lancedb
+sentence-transformers
+httpx
+beautifulsoup4
+rank-bm25
+ddgs
+pandas
+pyarrow
+numpy
+pydantic-settings
+python-dotenv

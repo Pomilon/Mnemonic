@@ -1,0 +1,29 @@
+# Git
+.git/
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+.venv
+venv/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data & Environment (Persist via volumes instead)
+data/
+.env
+config.json
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

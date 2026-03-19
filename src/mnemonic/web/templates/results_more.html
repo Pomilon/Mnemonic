@@ -1,0 +1,23 @@
+{% for res in results %}
+{% include 'card_partial.html' %}
+{% endfor %}
+
+<!-- Always update the load-more-container via OOB swap -->
+<div id="load-more-container" hx-swap-oob="true" class="py-12 flex justify-center border-t border-slate-900 mt-12">
+    {% if results|length > 0 %}
+    <button hx-post="/search" 
+            hx-vals='{"query": "{{ query }}", "offset": {{ next_offset }}}'
+            hx-target="#results-grid"
+            hx-swap="beforeend"
+            hx-indicator="#load-more-spinner"
+            class="group bg-slate-900 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/50 px-10 py-4 rounded-2xl text-xs font-black text-slate-400 hover:text-cyan-400 transition-all flex items-center gap-4 uppercase tracking-[0.2em] shadow-xl">
+        <i data-lucide="plus" size="16" class="group-hover:rotate-90 transition-transform"></i>
+        Load More Nodes
+        <i id="load-more-spinner" data-lucide="loader-2" size="16" class="htmx-indicator animate-spin"></i>
+    </button>
+    {% else %}
+    <div class="text-[10px] font-black text-slate-700 uppercase tracking-[0.4em] py-4 border border-slate-900/50 px-8 rounded-full">
+        End of Semantic Stream
+    </div>
+    {% endif %}
+</div>

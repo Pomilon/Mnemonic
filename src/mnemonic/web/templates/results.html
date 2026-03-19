@@ -1,0 +1,48 @@
+<div class="space-y-12 pb-24 animate-in fade-in duration-1000">
+    <div class="flex items-center justify-between border-b border-slate-800/50 pb-6">
+        <div class="flex flex-col gap-1">
+            <h2 class="text-2xl font-black text-slate-100 flex items-center gap-4 tracking-tight">
+                Data Stream
+                <span class="text-[10px] font-bold text-cyan-500 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full uppercase tracking-widest">{{ results|length }} Nodes Found</span>
+            </h2>
+            <p class="text-xs text-slate-500 font-medium">Vectorized semantic nodes retrieved in <span class="text-cyan-400">{{ latency }}s</span></p>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            {% if from_cache %}
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+                <i data-lucide="database" size="12" class="text-emerald-400"></i>
+                <span class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Cached Stream</span>
+            </div>
+            {% endif %}
+            <div class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+                Latent Dist: <span class="text-slate-400">{{ distance or '0.00' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Query Vector for subsequent rejections -->
+    <input type="hidden" id="current-query-vector" value='{{ query_vector_json }}'>
+
+    <div id="results-grid" class="bento-grid gap-6">
+        {% for res in results %}
+        {% include 'card_partial.html' %}
+        {% endfor %}
+    </div>
+
+    <!-- Load More Trigger -->
+    <div id="load-more-container" class="py-12 flex justify-center border-t border-slate-900 mt-12">
+        {% if results|length > 0 %}
+        <button hx-post="/search" 
+                hx-vals='{"query": "{{ query }}", "offset": {{ next_offset }}}'
+                hx-target="#results-grid"
+                hx-swap="beforeend"
+                hx-indicator="#load-more-spinner"
+                class="group bg-slate-900 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/50 px-10 py-4 rounded-2xl text-xs font-black text-slate-400 hover:text-cyan-400 transition-all flex items-center gap-4 uppercase tracking-[0.2em] shadow-xl">
+            <i data-lucide="plus" size="16" class="group-hover:rotate-90 transition-transform"></i>
+            Load More Nodes
+            <i id="load-more-spinner" data-lucide="loader-2" size="16" class="htmx-indicator animate-spin"></i>
+        </button>
+        {% endif %}
+    </div>
+</div>
