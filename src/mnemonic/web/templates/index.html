@@ -311,7 +311,7 @@
         <header></header>
 
         <!-- Logo Section (Fixed Position for Animation) -->
-        <div class="logo-section group" onclick="window.location.reload()">
+        <div class="logo-section group" onclick="window.location.href='/'">
             <div class="relative">
                 <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-glow group-hover:rotate-12 transition-all duration-500">
                     <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="2" class="text-slate-800" />
@@ -338,9 +338,9 @@
 
         <!-- Search Bar (Fixed Position for Animation) -->
         <div class="search-form-container">
-            <form hx-post="/search" hx-target="#results-stream" hx-indicator="#search-loading" 
+            <form id="search-form" hx-post="/search" hx-target="#results-stream" hx-indicator="#search-loading" 
                     class="relative group search-focus"
-                    onsubmit="triggerSearchAnimation()">
+                    onsubmit="triggerSearchAnimation(document.getElementById('search-input').value)">
                 <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-cyan-400 transition-colors">
                     <i data-lucide="search" size="20"></i>
                 </div>
@@ -464,13 +464,31 @@
         lucide.createIcons();
         let pinnedNodes = [];
 
-        function triggerSearchAnimation() {
+        function triggerSearchAnimation(query) {
             const container = document.getElementById('main-container');
             if (container.classList.contains('landing-mode')) {
                 container.classList.remove('landing-mode');
                 container.classList.add('searching-mode');
             }
+            
+            // Update browser URL
+            if (query) {
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?q=' + encodeURIComponent(query);
+                window.history.pushState({ path: newUrl }, '', newUrl);
+            }
         }
+
+        // Handle initial query from URL
+        window.addEventListener('load', () => {
+            const initialQuery = {{ (initial_query or '')|tojson }};
+            if (initialQuery) {
+                const input = document.getElementById('search-input');
+                input.value = initialQuery;
+                triggerSearchAnimation(initialQuery);
+                // Trigger HTMX search
+                htmx.trigger('#search-form', 'submit');
+            }
+        });
 
         // Manual log handling if sse-swap isn't enough or for local events
         function appendLocalLog(msg) {

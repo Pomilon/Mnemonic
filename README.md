@@ -1,11 +1,24 @@
 # Mnemonic: Semantic Meta-Search & Synthesis Engine
 
-Mnemonic is a high-performance semantic search middleware that transforms raw web data into a vectorized knowledge stream. It leverages local AI to understand intent, recalibrate results based on feedback, and synthesize findings into actionable intelligence.
+Mnemonic is a semantic search middleware that transforms raw web data into a vectorized knowledge stream. It leverages local AI to understand intent, recalibrate results based on feedback, and synthesize findings into actionable intelligence.
+
+## Showcase
+
+<p align="center">
+  <img src="assets/home.png" alt="Mnemonic Landing" width="800">
+  <br>
+  <em>Minimalist landing page.</em>
+</p>
+
+<p align="center">
+  <img src="assets/search.png" alt="Mnemonic Search Interface" width="800">
+  <br>
+  <em>Dense, multi-panel search workstation with Synthesis Workspace.</em>
+</p>
 
 ## Key Features
 
 - **Semantic Memory**: Uses **LanceDB** and **Sentence-Transformers** (`all-MiniLM-L6-v2`) to store and retrieve search results based on 384-dimensional query embeddings.
-- **Dynamic Landing UX**: A cinematic transition from a minimalist Google-style landing to a dense, multi-panel search workstation.
 - **Synthesis Workspace**: Pin search results to a side canvas and use a **local LLM (via Ollama)** to generate summarized insights and drafts.
 - **Bento Box UI**: A gapless, length-driven grid system that scales card sizes based on content volume, built with **Tailwind CSS** and **HTMX**.
 - **Vector Recalibration**: A self-correcting feedback loop. Rejecting a result applies a negative penalty to the query vector, shifting the search focus away from irrelevant clusters.

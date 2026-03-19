@@ -72,9 +72,12 @@ COLOR_MAP = {
 }
 
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
+async def home(request: Request, q: Optional[str] = None):
     llm_available = await summarizer.check_availability()
-    return templates.TemplateResponse(request, "index.html", {"llm_available": llm_available})
+    return templates.TemplateResponse(request, "index.html", {
+        "llm_available": llm_available,
+        "initial_query": q
+    })
 
 @app.post("/search", response_class=HTMLResponse)
 async def search(request: Request, query: str = Form(...), offset: int = Form(0)):
