@@ -18,44 +18,44 @@ Mnemonic is a semantic search middleware that transforms raw web data into a vec
 
 ## Key Features
 
-- **Semantic Memory**: Uses **LanceDB** and **Sentence-Transformers** (`all-MiniLM-L6-v2`) to store and retrieve search results based on 384-dimensional query embeddings.
-- **Synthesis Workspace**: Pin search results to a side canvas and use a **local LLM (via Ollama)** to generate summarized insights and drafts.
-- **Bento Box UI**: A gapless, length-driven grid system that scales card sizes based on content volume, built with **Tailwind CSS** and **HTMX**.
+- **Semantic Memory**: Uses **LanceDB** and **Sentence-Transformers** to store and retrieve search results based on high-dimensional query embeddings.
+- **HyDE Intent Expansion**: Implements **Hypothetical Document Embeddings** to expand short queries into dense semantic vectors, significantly improving retrieval accuracy.
+- **Multi-Engine Aggregator**: Parallel fetching across **Brave, Google, Bing, DuckDuckGo, Wikipedia, HackerNews, StackOverflow, and ArXiv**.
+- **Synthesis Workspace**: Pin search results to a side canvas and use a **local LLM (via Ollama or Llama.cpp)** to generate summarized insights and drafts.
 - **Vector Recalibration**: A self-correcting feedback loop. Rejecting a result applies a negative penalty to the query vector, shifting the search focus away from irrelevant clusters.
-- **Live Telemetry**: A terminal-style console providing real-time system logs and engine metrics via **Server-Sent Events (SSE)**.
-- **Admin Dashboard**: Secure management portal (`/admin`) to monitor cache performance, view stored queries, and perform factory resets.
+- **Real-time Verbose Feedback**: A dedicated search status bar and collapsible terminal provide live telemetry on expansion, retrieval, and re-ranking phases.
+- **Admin Dashboard**: Secure management portal (`/admin`) for runtime configuration of search parameters, synthesis models, and embedding catalog.
 
 ## Architecture
 
-1.  **Aggregator**: Parallel multi-engine fetching (currently via DuckDuckGo, extensible to Google/Bing).
-2.  **Refinement**: URL normalization, de-duplication, and semantic re-ranking using **BM25 + Cosine Similarity**.
-3.  **Memory**: Vector database with configurable TTL, distance thresholds, and rejection-based conflict resolution.
-4.  **Synthesis**: Local LLM integration (Llama 3/Mistral) for zero-latency context summarization.
+1.  **Aggregator**: Distributed query pipeline that normalizes results from multiple web and academic providers.
+2.  **Search System**: Orchestrates the retrieval lifecycle, including HyDE expansion, semantic filtering, and cross-engine deduplication.
+3.  **Refinement**: Dynamic re-ranking using **BM25 + Semantic Similarity** and privacy-focused URL cleaning.
+4.  **Memory**: Persistent vector store with configurable TTL, distance thresholds, and rejection-based penalty marking.
+5.  **Synthesis**: Local-first LLM integration supporting both Ollama (API) and Llama.cpp (Direct) providers.
 
 ## Getting Started
 
 ### Prerequisites
 - Python 3.10+
-- [Ollama](https://ollama.com/) (Optional, for synthesis features)
+- [Ollama](https://ollama.com/) or [Llama.cpp](https://github.com/ggerganov/llama.cpp)
 - `pip install -r requirements.txt`
 
 ### Configuration
-Mnemonic uses a dual-configuration system to balance security and flexibility:
+Mnemonic uses a dual-configuration system for maximum security and ease of use:
 
-1.  **System Config (`.env`)**: Used for sensitive secrets and API keys.
+1.  **System Config (`.env`)**: Sensitive secrets and API keys.
     ```bash
     cp .env.example .env
     ```
-2.  **App Config (`src/mnemonic/aggregator/*.json`)**: Used for operational settings (Search, Synthesis, Models). These can be updated live via the **Admin Dashboard**.
-    *   `app_config.json`: General search and cache parameters.
-    *   `llm_config.json`: Synthesis provider and model settings.
-    *   `engines.json`: Search engine toggles.
+2.  **App Config (`src/mnemonic/aggregator/*.json`)**: Operational settings.
+    *   **Auto-Initialization**: Missing JSON configs are automatically generated from `.example` templates on first run.
+    *   **Private Isolation**: Local configuration files are automatically ignored by Git to protect your custom environment.
+    *   **Live Updates**: Most settings (Search limits, HyDE toggle, LLM providers) can be updated live via the **Admin Dashboard**.
 
-**Key Settings:**
-- `MNEMONIC_ADMIN_TOKEN`: Secure token for the admin dashboard (set in `.env`).
-- `BRAVE_API_KEY`: API key for Brave Search provider (set in `.env`).
-- `USE_HYDE`: Toggle hypothetical document expansion (set in Search Settings).
-- `CACHE_TTL_DAYS`: How long results remain in semantic memory.
+**Key Environment Variables:**
+- `MNEMONIC_ADMIN_TOKEN`: Secure token for accessing the admin dashboard.
+- `BRAVE_API_KEY`, `GOOGLE_API_KEY`, etc.: API keys for optional search providers.
 
 ### Running with Docker (Recommended)
 Mnemonic is fully containerized. To build and start the environment:
@@ -65,30 +65,25 @@ docker compose up -d
 ```
 Visit `http://localhost:8000` to start querying.
 
-**Note on Ollama & Docker**: If you are running Ollama on your host machine, the default `OLLAMA_BASE_URL` in `docker-compose.yml` is set to `http://host.docker.internal:11434`. This ensures the container can reach your local AI models for synthesis.
-
 ### Running Manually
 ```bash
 # Start the FastAPI server
 export PYTHONPATH=$PYTHONPATH:.
 python3 src/mnemonic/api/main.py
 ```
-Visit `http://localhost:8000` to start searching.
 
-## Security
-- **Admin Access**: Protected by token-based `HttpOnly` cookie authentication.
-- **Privacy First**: Mnemonic acts as a pass-through processor; no external AI APIs are used. All synthesis happens locally on your hardware.
+## Security & Privacy
+- **Local First**: All embedding and synthesis operations happen on your hardware. No search data or context is sent to third-party AI providers.
+- **Admin Security**: The dashboard is protected by token-based authentication with secure `HttpOnly` cookies.
+- **Zero-Trust Config**: Sensitive keys never touch the application-level JSON files and remain strictly in the `.env` layer.
 
 ## Roadmap
 
-The following ideas represent a steady evolution of the core search and synthesis experience.
-
-- **Engine Expansion**: Integration of additional search providers (Brave Search, Bing, Google API) for higher result diversity.
-- **Export to Markdown**: One-click download of your synthesized findings and pinned references into a clean document.
-- **Advanced Filtering**: UI controls to filter results by domain, date, or content category (e.g., Code, News, Discussion).
-- **Custom Synthesis Styles**: Choice between different summarization modes (e.g., Deep Research, Quick Summary, Bullet Points).
-- **Admin Analytics**: Improved dashboard to visualize semantic memory trends and vector cluster patterns.
-- **UI/UX Polish**: Continued aesthetic refinements, smoother transitions, and deeper mobile optimization.
+- **Export to Markdown**: One-click download of synthesized findings and pinned references.
+- **Advanced Filtering**: UI controls to filter results by domain, date, or content category.
+- **Custom Synthesis Styles**: Choice between Deep Research, Quick Summary, or Bullet Point modes.
+- **Graph Visualization**: Visual mapping of semantic relationships between cached search nodes.
+- **Mobile Optimization**: PWA support and responsive refinements for the search workstation.
 
 ## License
 MIT License - See [LICENSE](LICENSE) for details.

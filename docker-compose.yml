@@ -6,9 +6,9 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
-      # Optionally mount .env or config.json if you want to override defaults
+      # Optionally mount .env or app_config.json if you want to override defaults
       # - ./.env:/app/.env
-      # - ./config.json:/app/config.json
+      # - ./src/mnemonic/aggregator/app_config.json:/app/src/mnemonic/aggregator/app_config.json
     environment:
       - MNEMONIC_ADMIN_TOKEN=${MNEMONIC_ADMIN_TOKEN:-admin-default-secret-change-me}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
