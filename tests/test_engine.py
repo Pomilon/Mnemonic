@@ -1,11 +1,13 @@
 import asyncio
 import os
 import shutil
+import pytest
 from src.mnemonic.engine import MnemonicEngine
 from src.mnemonic.aggregator.aggregator import SearchAggregator
-from src.mnemonic.aggregator.engines.mock import MockSearchClient
+from src.mnemonic.aggregator.engines.mock import MockSearchEngine
 from src.mnemonic.cache.database import SemanticCache
 
+@pytest.mark.asyncio
 async def test_engine_flow():
     # Clean up old data for clean test
     if os.path.exists("./data/mnemonic_db_test"):
@@ -13,7 +15,7 @@ async def test_engine_flow():
     
     # Initialize engine with test DB path and Mock client
     mock_aggregator = SearchAggregator()
-    mock_aggregator.clients = [MockSearchClient()]
+    mock_aggregator.clients = [MockSearchEngine()]
     
     test_cache = SemanticCache(db_path="./data/mnemonic_db_test")
     engine = MnemonicEngine(aggregator=mock_aggregator, cache=test_cache)

@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; background-color: #020617; color: #cbd5e1; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .htmx-indicator { display: none; }
         .htmx-request .htmx-indicator { display: inline-block; }
@@ -21,603 +21,595 @@
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
+        *:focus { outline: none !important; }
+
+        /* Bento Grid */
         .bento-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
             grid-auto-rows: minmax(200px, auto);
             grid-auto-flow: dense;
+            gap: 1.5rem;
         }
-
         @media (min-width: 640px) {
-            .bento-grid {
-                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            }
-        }
-        
-        @keyframes pulse-cyan {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
-            50% { box-shadow: 0 0 20px 2px rgba(34, 211, 238, 0.15); }
-        }
-        .search-focus:focus-within {
-            animation: pulse-cyan 3s infinite;
+            .bento-grid { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
         }
 
-        *:focus { outline: none !important; }
-
-        .scroll-container { height: calc(100vh - 73px); margin-top: 73px; }
-        @media (max-width: 640px) {
-            .scroll-container { height: calc(100vh - 120px); margin-top: 120px; }
-        }
-        
-        .logo-glow { filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.4)); }
-        
-        .telemetry-line {
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-4px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        /* 
-           STABLE POSITIONING SYSTEM
-           Logo and Search Bar are fixed to allow smooth interpolation.
-        */
-        
+        /* Fixed Header */
         header {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 73px;
-            z-index: 50;
-            background-color: transparent;
-            backdrop-filter: none;
-            border-bottom: 1px solid transparent;
-            transition: all 0.8s ease;
-            pointer-events: none;
+            z-index: 100;
+            background-color: #020617;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            transform: translateY(-100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         #main-container.searching-mode header {
-            background-color: rgba(2, 6, 23, 0.85);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(30, 41, 59, 1);
+            transform: translateY(0);
+        }
+
+        /* Landing State */
+        #landing-view {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            background-color: #020617;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        #main-container.searching-mode #landing-view {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        /* Results Container */
+        #results-view {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            padding-top: 73px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        #main-container.searching-mode #results-view {
+            opacity: 1;
             pointer-events: auto;
         }
 
-        @media (max-width: 640px) {
-            #main-container.searching-mode header {
-                height: 120px;
-            }
+        .scroll-container { 
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 24px;
         }
 
-        .logo-section {
-            position: fixed;
-            z-index: 60;
-            display: flex;
-            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
-            cursor: pointer;
-            
-            /* Landing State: Centered */
-            top: 25vh;
-            left: 50%;
-            transform: translateX(-50%);
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
+        /* Search Input Styling */
+        .search-wrapper {
+            position: relative;
             width: 100%;
-        }
-
-        #main-container.searching-mode .logo-section {
-            top: 18px;
-            left: 24px;
-            transform: translateX(0);
-            flex-direction: row;
-            gap: 1rem;
-            width: auto;
-        }
-
-        @media (max-width: 640px) {
-            #main-container.searching-mode .logo-section {
-                top: 12px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-        }
-
-        .logo-section svg {
-            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
-            width: 70px;
-            height: 70px;
-        }
-
-        @media (min-width: 640px) {
-            .logo-section svg {
-                width: 90px;
-                height: 90px;
-            }
-        }
-
-        #main-container.searching-mode .logo-section svg {
-            width: 32px;
-            height: 32px;
-        }
-
-        .logo-text {
-            font-weight: 900;
-            color: #f1f5f9;
-            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
-            
-            /* Landing State */
-            font-size: 2.2rem;
-            letter-spacing: 0.3em;
-            text-align: center;
-            line-height: 1;
-        }
-
-        @media (min-width: 640px) {
-            .logo-text {
-                font-size: 3.5rem;
-                letter-spacing: 0.4em;
-            }
-        }
-
-        #main-container.searching-mode .logo-text {
-            font-size: 1.125rem;
-            letter-spacing: 0.2em;
-            text-align: left;
-        }
-
-        .logo-subtext {
-            font-weight: 700;
-            color: rgba(34, 211, 238, 0.6);
-            text-transform: uppercase;
-            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
-            
-            /* Landing State */
-            font-size: 0.75rem;
-            letter-spacing: 0.2em;
-            margin-top: 0.5rem;
-        }
-
-        @media (min-width: 640px) {
-            .logo-subtext {
-                font-size: 0.875rem;
-                letter-spacing: 0.3em;
-                margin-top: 0.75rem;
-            }
-        }
-
-        #main-container.searching-mode .logo-subtext {
-            font-size: 9px;
-            margin-top: 0.1rem;
-        }
-
-        .search-form-container {
-            position: fixed;
-            z-index: 60;
-            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
-            
-            /* Landing State */
-            top: 55vh;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 650px;
-            padding: 0 1.5rem;
-        }
-
-        @media (max-width: 640px) {
-            .search-form-container {
-                width: calc(100% - 2rem);
-                left: 1rem;
-                transform: none;
-                padding: 0;
-            }
-        }
-
-        #main-container.searching-mode .search-form-container {
-            top: 14px;
-            left: 280px;
-            transform: translateX(0);
             max-width: 600px;
-            padding: 0;
-        }
-
-        @media (max-width: 640px) {
-            #main-container.searching-mode .search-form-container {
-                top: 60px;
-                left: 1rem;
-                width: calc(100% - 2rem);
-            }
         }
 
         .search-input {
             width: 100%;
-            border: 1px solid rgba(30, 41, 59, 1);
-            border-radius: 1rem;
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.85rem;
+            padding: 0.85rem 3.5rem;
             color: #f1f5f9;
-            transition: all 1.2s cubic-bezier(0.7, 0, 0.3, 1);
-            
-            /* Landing State */
-            padding: 1rem 3rem;
-            font-size: 1rem;
-            background-color: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        @media (min-width: 640px) {
-            .search-input {
-                padding: 1.25rem 3.5rem;
-                font-size: 1.1rem;
-            }
+        .search-input:focus {
+            border-color: #22d3ee;
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.1);
         }
 
-        #main-container.searching-mode .search-input {
-            padding: 0.75rem 3rem;
-            font-size: 0.9rem;
-            background-color: rgba(15, 23, 42, 0.5);
-            box-shadow: none;
-        }
-
-        .user-section {
-            position: fixed;
-            top: 18px;
-            right: 24px;
-            z-index: 60;
+        /* Categories */
+        .category-switcher {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
+            gap: 1.25rem;
         }
 
-        @media (max-width: 640px) {
-            .user-section {
-                display: none; /* Hide on mobile to save space */
-            }
+        .category-tab {
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #475569;
+            border-bottom: 2px solid transparent;
+            padding-bottom: 4px;
+            cursor: pointer;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            transition: all 0.2s ease;
         }
 
-        #main-container.searching-mode .user-section {
-            opacity: 1;
-            pointer-events: auto;
-            transition-delay: 1s;
-        }
+        .category-tab.active { color: #22d3ee; border-bottom-color: #22d3ee; }
 
-        main {
+        /* Settings Modal */
+        #settings-view {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background-color: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(12px);
             display: none;
+            align-items: center;
+            justify-content: center;
             opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        #main-container.searching-mode main {
+        #settings-view.active {
             display: flex;
-            animation: fadeInUI 1.5s forwards;
-            animation-delay: 0.8s;
+            opacity: 1;
         }
 
-        @keyframes fadeInUI {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .settings-card {
+            width: 100%;
+            max-width: 500px;
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 2rem;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
         }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 32px;
+            height: 18px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #1e293b;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #94a3b8;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #22d3ee; }
+        input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+        /* Performance Fix */
+        .result-card { contain: content; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-300 h-screen selection:bg-cyan-500/30 overflow-hidden">
+<body class="bg-slate-950">
     
-    <div id="main-container" class="landing-mode flex flex-col h-full w-full">
+    <div id="main-container" class="landing-mode">
         
-        <header></header>
-
-        <!-- Logo Section (Fixed Position for Animation) -->
-        <div class="logo-section group" onclick="window.location.href='/'">
-            <div class="relative">
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-glow group-hover:rotate-12 transition-all duration-500">
-                    <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="2" class="text-slate-800" />
-                    <path d="M30 50C30 38.9543 38.9543 30 50 30C61.0457 30 70 38.9543 70 50C70 61.0457 61.0457 70 50 70C38.9543 70 30 61.0457 30 50Z" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
-                    <path d="M50 20V30" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
-                    <path d="M50 70V80" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
-                    <path d="M20 50H30" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
-                    <path d="M70 50H80" stroke="url(#logo-grad)" stroke-width="4" stroke-linecap="round" />
-                    <circle cx="50" cy="50" r="8" fill="white" class="animate-pulse shadow-xl shadow-white/50" />
+        <!-- Header (Visible in Results Mode) -->
+        <header>
+            <div class="flex items-center gap-4 cursor-pointer" onclick="window.location.href='/'">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-7 h-7">
+                    <circle cx="50" cy="50" r="45" stroke="#1e293b" stroke-width="2" />
+                    <path d="M30 50C30 38.9543 38.9543 30 50 30C61.0457 30 70 38.9543 70 50C70 61.0457 61.0457 70 50 70C38.9543 70 30 61.0457 30 50Z" stroke="url(#header-logo-grad)" stroke-width="4" />
                     <defs>
-                        <linearGradient id="logo-grad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#22D3EE" />
-                            <stop offset="1" stop-color="#818CF8" />
+                        <linearGradient id="header-logo-grad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#22D3EE" /><stop offset="1" stop-color="#818CF8" />
                         </linearGradient>
                     </defs>
                 </svg>
-                <div class="absolute -inset-1 bg-cyan-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <span class="font-black text-sm tracking-[0.2em] text-white">MNEMONIC</span>
             </div>
-            <div class="flex flex-col items-center">
-                <span class="logo-text">MNEMONIC</span>
-                <span class="logo-subtext">Semantic Engine</span>
-            </div>
-        </div>
 
-        <!-- Search Bar (Fixed Position for Animation) -->
-        <div class="search-form-container">
-            <form id="search-form" hx-post="/search" hx-target="#results-stream" hx-indicator="#search-loading" 
-                    class="relative group search-focus"
-                    onsubmit="triggerSearchAnimation(document.getElementById('search-input').value)">
-                <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-cyan-400 transition-colors">
-                    <i data-lucide="search" size="20"></i>
+            <div class="category-switcher hidden xl:flex">
+                <button onclick="setCategory('general')" class="category-tab active">General</button>
+                <button onclick="setCategory('it')" class="category-tab">IT / Dev</button>
+                <button onclick="setCategory('science')" class="category-tab">Science</button>
+                <button onclick="setCategory('news')" class="category-tab">News</button>
+                <button onclick="setCategory('social')" class="category-tab">Social</button>
+                <button onclick="setCategory('images')" class="category-tab">Images</button>
+            </div>
+
+            <div class="flex-1 max-w-xl mx-8">
+                <form id="search-form-header" hx-post="/search" hx-target="#results-stream" hx-indicator="#search-loading-header" onsubmit="document.getElementById('search-status-bar').classList.remove('hidden')">
+                    <input type="hidden" name="category" class="current-category-input" value="general">
+                    <div class="search-wrapper">
+                        <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500">
+                            <i data-lucide="search" size="16"></i>
+                        </div>
+                        <input type="text" name="query" class="search-input text-sm py-2" placeholder="Semantic query..." required>
+                        <div id="search-loading-header" class="htmx-indicator absolute inset-y-0 right-4 flex items-center">
+                            <i data-lucide="loader-2" class="animate-spin text-cyan-500" size="16"></i>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSettings()" class="text-slate-500 hover:text-cyan-400 transition-colors">
+                    <i data-lucide="settings" size="20"></i>
+                </button>
+                <a href="/admin" class="text-slate-500 hover:text-indigo-400 transition-colors ml-1">
+                    <i data-lucide="shield-lock" size="19"></i>
+                </a>
+                <div class="w-2 h-2 rounded-full {{ 'bg-cyan-500' if ll_available else 'bg-slate-700' }}"></div>
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-600 flex items-center justify-center text-[10px] font-bold text-white">P</div>
+            </div>
+        </header>
+
+        <!-- Landing View -->
+        <div id="landing-view">
+            <div class="flex flex-col items-center mb-12">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 mb-6">
+                    <circle cx="50" cy="50" r="45" stroke="#1e293b" stroke-width="2" />
+                    <path d="M30 50C30 38.9543 38.9543 30 50 30C61.0457 30 70 38.9543 70 50C70 61.0457 61.0457 70 50 70C38.9543 70 30 61.0457 30 50Z" stroke="url(#landing-logo-grad)" stroke-width="4" />
+                    <circle cx="50" cy="50" r="8" fill="white" class="animate-pulse" />
+                    <defs>
+                        <linearGradient id="landing-logo-grad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#22D3EE" /><stop offset="1" stop-color="#818CF8" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1 class="text-5xl font-black tracking-[0.4em] text-white">MNEMONIC</h1>
+                <p class="text-[10px] font-black uppercase tracking-[0.5em] text-cyan-500/50 mt-4">Semantic Meta-Search Engine</p>
+            </div>
+
+            <div class="w-full max-w-2xl px-6">
+                <form id="search-form-landing" hx-post="/search" hx-target="#results-stream" hx-indicator="#search-loading-landing" onsubmit="triggerSearchAnimation()">
+                    <input type="hidden" name="category" class="current-category-input" value="general">
+                    <div class="search-wrapper">
+                        <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500">
+                            <i data-lucide="search" size="20"></i>
+                        </div>
+                        <input type="text" name="query" id="search-input-landing" placeholder="Query the vectorized web..." class="search-input text-lg" required>
+                        <div id="search-loading-landing" class="htmx-indicator absolute inset-y-0 right-5 flex items-center">
+                            <i data-lucide="loader-2" class="animate-spin text-cyan-500" size="20"></i>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="flex justify-center items-center gap-8 mt-10">
+                    <div class="flex justify-center gap-8">
+                        <button onclick="setCategory('general')" class="category-tab active">General</button>
+                        <button onclick="setCategory('it')" class="category-tab">IT / Dev</button>
+                        <button onclick="setCategory('science')" class="category-tab">Science</button>
+                        <button onclick="setCategory('news')" class="category-tab">News</button>
+                        <button onclick="setCategory('social')" class="category-tab">Social</button>
+                        <button onclick="setCategory('images')" class="category-tab">Images</button>
+                    </div>
+                    <div class="w-px h-4 bg-slate-800"></div>
+                    <button onclick="toggleSettings()" class="text-slate-500 hover:text-cyan-400 transition-colors" title="Engine Settings">
+                        <i data-lucide="settings" size="18"></i>
+                    </button>
+                    <a href="/admin" class="text-slate-500 hover:text-indigo-400 transition-colors" title="Admin Dashboard">
+                        <i data-lucide="shield-lock" size="17"></i>
+                    </a>
                 </div>
-                <input
-                    type="text"
-                    name="query"
-                    id="search-input"
-                    placeholder="Query the vectorized web..."
-                    class="search-input bg-slate-900/50 outline-none"
-                    required
-                >
-                <div id="search-loading" class="htmx-indicator absolute inset-y-0 right-5 flex items-center">
-                    <i data-lucide="loader-2" class="animate-spin text-cyan-500" size="20"></i>
-                </div>
-            </form>
-        </div>
-
-        <!-- User Section (Fixed Position for Header) -->
-        <div class="user-section">
-            <div class="flex items-center gap-2.5 px-4 py-2 bg-slate-900 border border-slate-800 rounded-full shadow-inner">
-                <div class="w-2 h-2 rounded-full {{ 'bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.6)]' if ll_available else 'bg-slate-700' }}"></div>
-                <span class="text-[10px] font-bold uppercase tracking-widest {{ 'text-slate-300' if ll_available else 'text-slate-600' }}">
-                    {{ 'LLM Online' if ll_available else 'LLM Offline' }}
-                </span>
             </div>
-            <button class="text-slate-500 hover:text-cyan-400 transition-colors"><i data-lucide="settings" size="20"></i></button>
-            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-indigo-500/20 border border-white/10">P</div>
         </div>
 
-        <!-- Main Content -->
-        <main class="flex-1 flex overflow-hidden">
-            
-            <!-- Left: Results Stream -->
-            <section id="exploration-pane" class="flex-1 overflow-y-auto p-6 scroll-smooth scroll-container bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.5),transparent)]">
-                <div id="results-stream" class="max-w-7xl mx-auto h-full">
-                    <!-- Results will be loaded here -->
+        <!-- Results View -->
+        <div id="results-view">
+            <section class="scroll-container">
+                <!-- Verbose Status Bar -->
+                <div id="search-status-bar" class="max-w-7xl mx-auto px-6 mb-4 hidden">
+                    <div class="flex items-center gap-4 py-3 px-5 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                        <i data-lucide="loader-2" class="animate-spin text-cyan-500" size="14"></i>
+                        <span id="current-status-text" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Initializing System...</span>
+                    </div>
+                </div>
+
+                <div id="results-stream" class="max-w-7xl mx-auto">
+                    <!-- Results Load Here -->
                 </div>
             </section>
 
-            <!-- Right: Synthesis Canvas & Telemetry -->
             <aside class="w-[480px] border-l border-slate-800 bg-slate-950 flex flex-col hidden xl:flex">
-                
-                <!-- Canvas -->
-                <div class="flex-1 flex flex-col overflow-hidden border-b border-slate-800">
-                    <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/30">
-                        <h2 class="font-bold text-slate-200 flex items-center gap-3 uppercase tracking-[0.1em] text-xs">
-                            <i data-lucide="layers-3" size="18" class="text-indigo-400"></i>
-                            Synthesis Workspace
-                        </h2>
-                        <span id="pin-count" class="text-[9px] font-black text-slate-400 bg-slate-800 px-3 py-1 rounded-lg uppercase tracking-widest border border-slate-700">0 Items</span>
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                        <h2 class="font-black text-slate-200 uppercase tracking-widest text-[10px]">Synthesis Workspace</h2>
+                        <span id="pin-count" class="text-[9px] font-black text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1 rounded-lg">0 Items</span>
                     </div>
-
-                    <div id="canvas-items" class="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-950/40">
-                        <div id="empty-canvas" class="h-full flex flex-col items-center justify-center text-center opacity-30 px-10">
-                            <i data-lucide="pin" size="48" class="mb-4 text-slate-600"></i>
-                            <p class="text-xs font-medium uppercase tracking-widest leading-loose">Pin search nodes here to build context for LLM synthesis.</p>
+                    <div id="canvas-items" class="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div id="empty-canvas" class="h-full flex flex-col items-center justify-center text-center opacity-20">
+                            <p class="text-[10px] font-black uppercase tracking-widest leading-loose">Pin nodes to build context.</p>
                         </div>
                     </div>
-
-                    <!-- Functional Summarization -->
-                    <div class="p-6 bg-slate-950 border-t border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Context Output</h3>
-                            <div class="flex gap-2">
-                                <button 
-                                    onclick="clearPins()"
-                                    class="text-[9px] font-bold text-slate-500 hover:text-rose-400 px-2 py-1 transition-colors uppercase"
-                                >Clear</button>
-                                <button 
-                                    onclick="synthesizeContext()"
-                                    id="synth-btn"
-                                    class="text-[10px] font-black bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500 hover:text-slate-950 px-4 py-1.5 rounded-lg transition-all flex items-center gap-2 uppercase tracking-widest shadow-lg shadow-cyan-500/5"
-                                >
-                                    <i data-lucide="sparkles" size="12"></i> Synthesize
-                                </button>
-                            </div>
+                    <div class="p-6 border-t border-slate-800 bg-slate-900/10">
+                        <div class="flex gap-2 mb-4">
+                            <button onclick="synthesizeContext()" id="synth-btn" class="flex-1 bg-cyan-500 text-slate-950 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-colors">Synthesize</button>
+                            <button onclick="clearPins()" class="px-4 text-[10px] text-slate-500 uppercase font-black hover:text-rose-400 transition-colors">Clear</button>
                         </div>
-                        
-                        <div id="summary-output" class="group hidden mb-5 p-5 bg-cyan-500/5 border border-cyan-500/10 rounded-xl text-sm text-slate-200 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-2 duration-500 relative">
-                            <button 
-                                onclick="copySummary()" 
-                                class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all p-2 bg-slate-900/80 rounded-lg text-slate-500 hover:text-cyan-400 border border-slate-800 hover:border-cyan-500/30"
-                                title="Copy to clipboard"
-                            >
-                                <i data-lucide="copy" size="14"></i>
-                            </button>
+                        <div id="summary-output" class="hidden mb-4 p-5 bg-slate-900 border border-slate-800 rounded-2xl text-sm leading-relaxed text-slate-300">
                             <div id="summary-content"></div>
                         </div>
-
-                        <div class="relative">
-                            <textarea 
-                                id="notes-area"
-                                placeholder="Draft your synthesized findings..."
-                                class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-5 text-sm text-slate-300 placeholder-slate-700 focus:outline-none focus:border-indigo-500/30 resize-none h-40 transition-all shadow-inner font-light leading-relaxed"
-                            ></textarea>
-                            <div class="absolute bottom-4 right-4 text-[9px] font-bold text-slate-600 uppercase tracking-widest pointer-events-none">Draft Mode</div>
-                        </div>
+                        <textarea id="notes-area" placeholder="Research notes..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-5 text-sm text-slate-300 placeholder-slate-500 resize-none h-40 outline-none focus:border-cyan-500/30 transition-all font-light"></textarea>
                     </div>
                 </div>
-
+                
                 <!-- Telemetry Terminal -->
-                <div class="h-64 bg-black flex flex-col font-mono border-t border-slate-800" hx-ext="sse" sse-connect="/telemetry">
-                    <div class="px-4 py-2.5 border-b border-slate-900 flex items-center justify-between bg-slate-950">
-                        <div class="flex items-center gap-3">
-                            <div class="flex gap-1.5">
-                                <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
-                                <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
-                                <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
-                            </div>
-                            <span class="text-[9px] font-bold text-slate-600 tracking-[0.2em] uppercase">Mnemonic_OS // Telemetry</span>
+                <div id="terminal-container" class="transition-all duration-300 ease-in-out border-t border-slate-800 bg-black flex flex-col">
+                    <div class="flex items-center justify-between px-4 py-2 bg-slate-950/50 border-b border-white/5 cursor-pointer hover:bg-slate-900/50 transition-colors" onclick="toggleTerminal()">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="terminal" class="text-slate-500" size="10"></i>
+                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Live Telemetry</span>
                         </div>
-                        <span class="text-[9px] text-cyan-900">V1.0.4-STABLE</span>
+                        <i id="terminal-toggle-icon" data-lucide="chevron-down" class="text-slate-500" size="12"></i>
                     </div>
-                    <!-- SSE auto-swap into this div -->
-                    <div id="telemetry-log" sse-swap="log" hx-swap="afterbegin" class="flex-1 overflow-y-auto p-4 space-y-2 text-[10px] selection:bg-cyan-900">
-                        <div class="flex gap-3 text-slate-700 telemetry-line">
-                            <span class="shrink-0">[00:00:00]</span>
-                            <span>Mnemonic Core initialized. Local vector db connected.</span>
+                    <div id="terminal-content" class="h-40 p-4 text-[9px] text-slate-400 overflow-y-auto no-scrollbar font-mono">
+                        <div id="telemetry-log">
+                            <div class="opacity-50">[SYSTEM] Mnemonic Search System Online.</div>
                         </div>
                     </div>
                 </div>
             </aside>
+        </div>
 
-        </main>
+        <!-- Settings Modal -->
+        <div id="settings-view" onclick="if(event.target === this) toggleSettings()">
+            <div class="settings-card">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="sliders" class="text-cyan-400" size="20"></i>
+                        <h2 class="text-lg font-black text-white tracking-widest uppercase">Engine Toggles</h2>
+                    </div>
+                    <button onclick="toggleSettings()" class="text-slate-500 hover:text-white"><i data-lucide="x" size="20"></i></button>
+                </div>
+
+                <!-- Engines Panel Only -->
+                <div id="panel-engines" class="flex-1 overflow-y-auto pr-4 space-y-4 no-scrollbar">
+                    <div id="engine-settings-list" class="space-y-4"></div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-800 flex justify-between items-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Model & LLM settings in admin.</p>
+                    <button onclick="saveEngineSettings()" id="save-engines-btn" class="bg-cyan-500 hover:bg-white text-slate-950 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Save Changes</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         lucide.createIcons();
+        let currentCategory = 'general';
         let pinnedNodes = [];
+        let engineConfig = {};
 
-        function triggerSearchAnimation(query) {
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.current-category-input').forEach(input => input.value = cat);
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                const label = tab.innerText.toLowerCase();
+                if (label === cat || (cat === 'it' && label === 'it / dev')) tab.classList.add('active');
+                else tab.classList.remove('active');
+            });
+            if (document.getElementById('main-container').classList.contains('searching-mode')) {
+                htmx.trigger('#search-form-header', 'submit');
+            }
+        }
+
+        function triggerSearchAnimation() {
             const container = document.getElementById('main-container');
-            if (container.classList.contains('landing-mode')) {
-                container.classList.remove('landing-mode');
-                container.classList.add('searching-mode');
-            }
-            
-            // Update browser URL
-            if (query) {
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?q=' + encodeURIComponent(query);
-                window.history.pushState({ path: newUrl }, '', newUrl);
-            }
+            const landingQuery = document.getElementById('search-input-landing').value;
+            document.querySelectorAll('.search-input').forEach(input => input.value = landingQuery);
+            container.classList.add('searching-mode');
+
+            // Show status bar
+            document.getElementById('search-status-bar').classList.remove('hidden');
+            document.getElementById('current-status-text').innerText = 'Warming up search system...';
+
+            const newUrl = window.location.pathname + '?q=' + encodeURIComponent(landingQuery) + '&cat=' + currentCategory;
+            window.history.pushState({}, '', newUrl);
         }
 
-        // Handle initial query from URL
-        window.addEventListener('load', () => {
-            const initialQuery = {{ (initial_query or '')|tojson }};
-            if (initialQuery) {
-                const input = document.getElementById('search-input');
-                input.value = initialQuery;
-                triggerSearchAnimation(initialQuery);
-                // Trigger HTMX search
-                htmx.trigger('#search-form', 'submit');
+        function toggleTerminal() {
+            const content = document.getElementById('terminal-content');
+            const icon = document.getElementById('terminal-toggle-icon');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.setAttribute('data-lucide', 'chevron-down');
+            } else {
+                content.classList.add('hidden');
+                icon.setAttribute('data-lucide', 'chevron-up');
             }
-        });
-
-        // Manual log handling if sse-swap isn't enough or for local events
-        function appendLocalLog(msg) {
-            const logContainer = document.getElementById('telemetry-log');
-            const timeStr = new Date().toLocaleTimeString([], { hour12: false });
-            const logHtml = `<div class="flex gap-3 text-slate-500 telemetry-line"><span class="shrink-0 text-slate-800">[${timeStr}]</span> <span>${msg}</span></div>`;
-            logContainer.insertAdjacentHTML('afterbegin', logHtml);
-        }
-
-        // Initialize icons after HTMX swaps
-        document.body.addEventListener('htmx:afterSwap', function(e) {
             lucide.createIcons();
-            // Scroll to top of results on new search
-            if (e.detail.target.id === "results-stream" && !e.detail.requestConfig.parameters.offset) {
-                document.getElementById('exploration-pane').scrollTop = 0;
+        }
+
+        // Custom SSE handler for verbose feedback
+        const eventSource = new EventSource('/telemetry');
+        eventSource.addEventListener('log', function(e) {
+            const statusText = document.getElementById('current-status-text');
+            const logMsg = e.data;
+
+            // Extract the message without the timestamp [HH:MM:SS]
+            const cleanMsg = logMsg.replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '');
+
+            if (statusText) {
+                statusText.innerText = cleanMsg;
+                // If the message contains "Search cycle complete", hide the status bar after a delay
+                if (cleanMsg.includes('Search cycle complete') || cleanMsg.includes('Search complete')) {
+                    setTimeout(() => {
+                        document.getElementById('search-status-bar').classList.add('hidden');
+                    }, 2000);
+                }
+            }
+
+            // Append to log panel manually
+            const logPanel = document.getElementById('telemetry-log');
+            if (logPanel) {
+                const entry = document.createElement('div');
+                entry.className = "mb-1 border-l border-slate-800 pl-2 py-0.5 hover:bg-white/5 transition-colors";
+                entry.innerHTML = `<span class="text-slate-700 mr-2">${logMsg.match(/\[\d{2}:\d{2}:\d{2}\]/)}</span>${cleanMsg}`;
+                logPanel.appendChild(entry);
+                // Auto-scroll to bottom
+                const content = document.getElementById('terminal-content');
+                content.scrollTop = content.scrollHeight;
             }
         });
+
+        async function toggleSettings() {
+            const view = document.getElementById('settings-view');
+            if (view.classList.contains('active')) {
+                view.classList.remove('active');
+                setTimeout(() => view.style.display = 'none', 300);
+            } else {
+                view.style.display = 'flex';
+                view.offsetHeight; // trigger reflow
+                view.classList.add('active');
+                await loadEngineSettings();
+            }
+        }
+
+        async function loadEngineSettings() {
+            try {
+                const res = await fetch('/api/config/engines');
+                engineConfig = await res.json();
+                renderEngineSettings();
+                lucide.createIcons();
+            } catch (e) { console.error("Failed to load engines:", e); }
+        }
+
+        function renderEngineSettings() {
+            const list = document.getElementById('engine-settings-list');
+            list.innerHTML = Object.entries(engineConfig).map(([id, cfg]) => `
+                <div class="flex items-center justify-between p-4 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-100 uppercase tracking-widest">${id}</h3>
+                        <p class="text-[9px] text-slate-500 font-medium mt-1 uppercase">${cfg.categories.join(', ')}</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" ${cfg.enabled ? 'checked' : ''} onchange="engineConfig['${id}'].enabled = this.checked">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `).join('');
+        }
+
+        async function saveEngineSettings() {
+            const btn = document.getElementById('save-engines-btn');
+            const original = btn.innerText;
+            btn.innerText = 'SAVING...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/config/engines', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(engineConfig)
+                });
+                if (res.ok) {
+                    btn.innerText = 'SUCCESS';
+                    setTimeout(() => { toggleSettings(); btn.innerText = original; btn.disabled = false; }, 1000);
+                } else throw new Error('Failed to save');
+            } catch (e) {
+                btn.innerText = 'ERROR';
+                setTimeout(() => { btn.innerText = original; btn.disabled = false; }, 2000);
+            }
+        }
 
         function pinItem(id) {
             const card = document.getElementById('card-' + id);
-            if (!card) return;
+            if (!card || pinnedNodes.some(n => n.id === id)) return;
             const title = card.querySelector('h3').innerText;
-            const snippet = card.querySelector('p')?.innerText || card.querySelector('code')?.innerText || "No content";
-            const iconHtml = card.querySelector('.node-icon').innerHTML;
-            
-            if (pinnedNodes.some(n => n.id === id)) {
-                appendLocalLog(`Node ${id.substring(0,8)} already in workspace.`);
-                return;
-            }
-            
-            pinnedNodes.push({ id, title, snippet });
-            appendLocalLog(`Pinned node: ${title.substring(0,30)}...`);
-            
+            const snippet = card.querySelector('p.text-sm').innerText;
+            const url = card.querySelector('a[href]').href;
+            pinnedNodes.push({ id, title, snippet, url });
             const canvas = document.getElementById('canvas-items');
-            const empty = document.getElementById('empty-canvas');
-            if (empty) empty.style.display = 'none';
-            
+            document.getElementById('empty-canvas').style.display = 'none';
             const pin = document.createElement('div');
-            pin.id = 'pin-' + id;
-            pin.className = "group bg-slate-900 border border-slate-800 rounded-xl p-5 relative hover:border-indigo-500/40 transition-all animate-in zoom-in-95 duration-300 shadow-xl";
+            pin.className = "bg-slate-900 border border-slate-800 p-5 rounded-2xl animate-in zoom-in-95 duration-200 relative group";
             pin.innerHTML = `
-                <button onclick="unpinItem('${id}')" class="absolute right-4 top-4 p-2 text-slate-600 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors">
-                    <i data-lucide="trash-2" size="14"></i>
+                <h4 class="text-xs font-bold text-slate-200 leading-relaxed pr-6">${title}</h4>
+                <p class="text-[10px] text-slate-500 mt-2 line-clamp-3 font-light">${snippet}</p>
+                <button onclick="removePin('${id}', this.parentElement)" class="absolute top-4 right-4 text-slate-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="x" size="14"></i>
                 </button>
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="scale-90 opacity-80">${iconHtml}</div>
-                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Context Node</span>
-                </div>
-                <h4 class="text-sm font-bold text-slate-100 line-clamp-2 pr-8 leading-relaxed">${title}</h4>
             `;
             canvas.prepend(pin);
             lucide.createIcons();
             updatePinCount();
         }
 
-        function unpinItem(id) {
+        function removePin(id, element) {
             pinnedNodes = pinnedNodes.filter(n => n.id !== id);
-            const pin = document.getElementById('pin-' + id);
-            if (pin) pin.remove();
-            if (pinnedNodes.length === 0) {
-                document.getElementById('empty-canvas').style.display = 'flex';
-            }
+            element.remove();
+            if (pinnedNodes.length === 0) document.getElementById('empty-canvas').style.display = 'flex';
             updatePinCount();
-            appendLocalLog(`Removed node from workspace.`);
         }
 
         function clearPins() {
             pinnedNodes = [];
             document.getElementById('canvas-items').innerHTML = '';
             document.getElementById('empty-canvas').style.display = 'flex';
-            updatePinCount();
             document.getElementById('summary-output').classList.add('hidden');
+            updatePinCount();
         }
 
         function updatePinCount() {
-            document.getElementById('pin-count').innerText = pinnedNodes.length + (pinnedNodes.length === 1 ? ' Item' : ' Items');
+            document.getElementById('pin-count').innerText = pinnedNodes.length + ' Items';
         }
 
         async function synthesizeContext() {
             if (pinnedNodes.length === 0) return;
-            
             const btn = document.getElementById('synth-btn');
-            const output = document.getElementById('summary-output');
-            const content = document.getElementById('summary-content');
-            const originalContent = btn.innerHTML;
-            
-            btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin" size="12"></i> Reasoning...';
-            lucide.createIcons();
-            
+            const original = btn.innerText;
+            btn.innerText = 'Analyzing...';
             const formData = new FormData();
             formData.append('context', JSON.stringify(pinnedNodes));
-            
             try {
-                const response = await fetch('/synthesize', {
-                    method: 'POST',
-                    body: formData
-                });
-                const summary = await response.text();
-                
-                content.innerText = summary;
-                output.classList.remove('hidden');
-                output.classList.add('animate-in', 'fade-in', 'slide-in-from-top-2');
-                
-                // Also scroll to bottom of canvas to show output
-                const canvas = document.getElementById('canvas-items').parentElement;
-                canvas.scrollTop = canvas.scrollHeight;
-            } catch (e) {
-                appendLocalLog(`Synthesis error: ${e.message}`);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-                lucide.createIcons();
-            }
+                const response = await fetch('/synthesize', { method: 'POST', body: formData });
+                document.getElementById('summary-content').innerHTML = await response.text();
+                document.getElementById('summary-output').classList.remove('hidden');
+            } finally { btn.innerText = original; }
         }
 
-        function copySummary() {
-            const content = document.getElementById('summary-content').innerText;
-            navigator.clipboard.writeText(content).then(() => {
-                appendLocalLog("Synthesis copied to clipboard.");
-            });
-        }
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get('q');
+            if (q) {
+                const cat = params.get('cat') || 'general';
+                setCategory(cat);
+                document.querySelectorAll('.search-input').forEach(input => input.value = q);
+                document.getElementById('main-container').classList.add('searching-mode');
+                htmx.trigger('#search-form-header', 'submit');
+            }
+        });
+
+        document.body.addEventListener('htmx:afterSwap', () => lucide.createIcons());
     </script>
 </body>
 </html>

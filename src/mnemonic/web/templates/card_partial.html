@@ -77,22 +77,30 @@
     </div>
 
     <!-- Card Content -->
-    <h3 class="text-lg font-bold text-slate-100 mb-3 group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
-        {{ res.title }}
-    </h3>
-    
-    <!-- Code Blocks Removed - Snippets displayed as text only -->
-    <p class="text-sm text-slate-400 leading-relaxed flex-1 {{ clamp }} font-light overflow-hidden">
-        {{ res.snippet }}
-    </p>
+    <div class="flex items-start gap-4 mb-4 flex-1 overflow-hidden">
+        {% if res.thumbnail %}
+        <div class="w-20 h-20 rounded-xl overflow-hidden border border-slate-800 flex-shrink-0 bg-slate-900 group-hover:border-cyan-500/30 transition-colors">
+            <img src="/proxy/image?url={{ res.thumbnail|urlencode }}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="flex-1 min-w-0 flex flex-col h-full">
+            <h3 class="text-lg font-bold text-slate-100 mb-2 group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+                {{ res.title }}
+            </h3>
+            
+            <p class="text-sm text-slate-400 leading-relaxed flex-1 {{ clamp }} font-light overflow-hidden">
+                {{ res.snippet }}
+            </p>
+        </div>
+    </div>
 
     <!-- Card Footer -->
     <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between">
         <div class="flex flex-col">
-            <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">{{ res.source }}</span>
-            <span class="text-[10px] text-slate-500 mono truncate max-w-[180px] mt-0.5 opacity-50">{{ res.url|replace("https://", "")|replace("http://", "") }}</span>
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">{{ res.source }}</span>
+            <span class="text-[10px] text-slate-400 mono truncate max-w-[180px] mt-0.5 opacity-70">{{ res.url|replace("https://", "")|replace("http://", "") }}</span>
         </div>
-        <div class="flex items-center gap-1.5 text-slate-700 group-hover:text-cyan-900 transition-colors">
+        <div class="flex items-center gap-1.5 text-slate-500 group-hover:text-cyan-600 transition-colors">
             <i data-lucide="bar-chart-3" size="12"></i>
             <span class="text-[9px] font-bold mono">{{ "%.2f"|format(res.score) }}</span>
         </div>

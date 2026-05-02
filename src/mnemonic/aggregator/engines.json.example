@@ -1,0 +1,17 @@
+{
+  "duckduckgo": {
+    "enabled": true,
+    "class": "DuckDuckGoClient",
+    "categories": ["general", "news", "it", "social", "images"]
+  },
+  "wikipedia": {
+    "enabled": true,
+    "class": "WikipediaClient",
+    "categories": ["general", "science"]
+  },
+  "brave": {
+    "enabled": false,
+    "class": "BraveSearchClient",
+    "categories": ["general", "it"]
+  }
+}

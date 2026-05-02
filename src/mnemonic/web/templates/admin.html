@@ -9,24 +9,44 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #94a3b8; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        
+        .admin-tab {
+            padding: 0.75rem 1.5rem;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #475569;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .admin-tab.active { color: #22d3ee; border-bottom-color: #22d3ee; }
+        .hidden { display: none; }
+
+        .form-label { display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; margin-bottom: 0.5rem; }
+        .form-input { width: 100%; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 0.75rem; padding: 0.75rem 1rem; color: #f1f5f9; font-size: 0.875rem; outline: none; }
+        .form-select { width: 100%; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 0.75rem; padding: 0.75rem 1rem; color: #f1f5f9; font-size: 0.875rem; outline: none; appearance: none; cursor: pointer; }
+
+        .model-card { background-color: #0f172a; border: 1px solid #1e293b; padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s ease; }
+        .model-card.active { border-color: #22d3ee; background-color: rgba(34, 211, 238, 0.05); }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-300 min-h-screen selection:bg-cyan-500/30">
+<body class="selection:bg-cyan-500/30 min-h-screen">
     
     <div class="max-w-6xl mx-auto px-6 py-12">
         <!-- Header -->
-        <div class="flex justify-between items-end mb-12 border-b border-slate-800 pb-8">
+        <div class="flex justify-between items-end mb-8 border-b border-slate-800 pb-8">
             <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-3 text-cyan-400 mb-2">
                     <i data-lucide="shield-check" size="24"></i>
-                    <span class="font-black tracking-[0.3em] uppercase text-sm">System Admin</span>
+                    <span class="font-black tracking-[0.3em] uppercase text-[10px]">System Control</span>
                 </div>
-                <h1 class="text-4xl font-black text-slate-100 tracking-tight">Memory Dashboard</h1>
-                <p class="text-slate-500 text-sm font-medium">Internal state management for vectorized semantic nodes.</p>
+                <h1 class="text-4xl font-black text-slate-100 tracking-tight">System Admin</h1>
             </div>
             <a href="/" class="bg-slate-900 border border-slate-800 hover:border-cyan-500/50 px-6 py-2.5 rounded-xl text-xs font-black text-slate-400 hover:text-cyan-400 transition-all flex items-center gap-3 uppercase tracking-widest">
                 <i data-lucide="arrow-left" size="14"></i>
@@ -34,106 +54,249 @@
             </a>
         </div>
 
-        <!-- Global Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div class="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl shadow-xl">
-                <h2 class="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-4">Cached Indices</h2>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-5xl font-black text-indigo-400">{{ stats.count }}</p>
-                    <span class="text-xs text-slate-600 font-bold uppercase tracking-widest">Nodes</span>
-                </div>
-            </div>
-            
-            <div class="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl shadow-xl">
-                <h2 class="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-4">Global Rejections</h2>
-                <div class="flex items-baseline gap-2">
-                    <p class="text-5xl font-black text-rose-500">{{ stats.rejections }}</p>
-                    <span class="text-xs text-slate-600 font-bold uppercase tracking-widest">Flags</span>
-                </div>
-            </div>
+        <!-- Navigation Tabs -->
+        <div class="flex gap-4 mb-10 border-b border-slate-900">
+            <div onclick="switchTab('memory')" id="tab-memory" class="admin-tab active">Memory Index</div>
+            <div onclick="switchTab('kernel')" id="tab-kernel" class="admin-tab">Search Settings</div>
+            <div onclick="switchTab('config')" id="tab-config" class="admin-tab">Engine Config</div>
+            <div onclick="switchTab('synthesis')" id="tab-synthesis" class="admin-tab">Synthesis LLM</div>
+            <div onclick="switchTab('models')" id="tab-models" class="admin-tab">Embedding Models</div>
+        </div>
 
-            <div class="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col justify-between">
-                <div>
-                    <h2 class="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-4">System Maintenance</h2>
-                    <p class="text-xs text-slate-600 font-medium mb-6 leading-relaxed">Flush all vectorized data and reset the semantic space to its initial state.</p>
+        <!-- Kernel Settings Panel -->
+        <div id="panel-kernel" class="admin-panel hidden space-y-6">
+            <div class="max-w-2xl bg-slate-900/50 border border-slate-800 p-8 rounded-3xl">
+                <h2 class="text-slate-100 text-lg font-black uppercase tracking-widest mb-6">Search Parameters</h2>
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl">
+                        <div>
+                            <p class="text-xs font-bold text-slate-100 uppercase tracking-widest">HyDE Expansion</p>
+                            <p class="text-[9px] text-slate-500 mt-1 uppercase">Use LLM to expand semantic intent</p>
+                        </div>
+                        <input type="checkbox" id="kernel-hyde" class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-cyan-500">
+                    </div>
+                    <div><label class="form-label">Results Per Engine</label><input type="number" id="kernel-max-results" class="form-input"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="form-label">Penalty Weight</label><input type="number" id="kernel-penalty" class="form-input" step="0.1"></div>
+                        <div><label class="form-label">Cache TTL (Days)</label><input type="number" id="kernel-ttl" class="form-input"></div>
+                    </div>
                 </div>
-                <form action="/admin/reset" method="POST" onsubmit="return confirm('CRITICAL: This will destroy ALL cached semantic memory. Proceed?')">
-                    <button class="w-full bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all">
-                        Factory Reset Database
-                    </button>
-                </form>
+                <button onclick="saveAdminSearch()" id="save-kernel-btn" class="mt-8 bg-cyan-500 text-slate-950 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Update Search Config</button>
             </div>
         </div>
 
-        <!-- Index Table -->
-        <div class="bg-slate-900/30 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-            <div class="px-8 py-6 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
-                <h2 class="font-black text-slate-200 uppercase tracking-widest text-xs flex items-center gap-3">
-                    <i data-lucide="database" size="16" class="text-cyan-400"></i>
-                    Memory Index (LanceDB)
-                </h2>
-                <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">Last 50 Records</span>
+        <!-- Memory Panel -->
+        <div id="panel-memory" class="admin-panel space-y-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl">
+                    <h2 class="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-4">Cached Indices</h2>
+                    <div class="flex items-baseline gap-2"><p class="text-5xl font-black text-indigo-400">{{ stats.count }}</p><span class="text-xs text-slate-600 font-bold uppercase tracking-widest">Nodes</span></div>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl">
+                    <h2 class="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-4">Rejection Rate</h2>
+                    <div class="flex items-baseline gap-2"><p class="text-5xl font-black text-rose-500">{{ "%.1f"|format(stats.analytics.rejection_rate) }}%</p><span class="text-xs text-slate-600 font-bold uppercase tracking-widest">Conflicts</span></div>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl flex flex-col justify-between">
+                    <div><h2 class="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-4">Maintenance</h2><p class="text-xs text-slate-600 font-medium leading-relaxed">Flush vectorized memory space.</p></div>
+                    <form action="/admin/reset" method="POST" onsubmit="return confirm('Factory reset database?')"><button class="w-full bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Reset Database</button></form>
+                </div>
             </div>
-            
-            <div class="overflow-x-auto">
+
+            <div class="bg-slate-900/30 border border-slate-800 rounded-3xl overflow-hidden">
                 <table class="w-full text-left">
-                    <thead>
-                        <tr class="bg-slate-950/80 border-b border-slate-800">
-                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Timestamp</th>
-                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Query</th>
-                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Results</th>
-                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Rejections</th>
-                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Actions</th>
-                        </tr>
-                    </thead>
+                    <thead><tr class="bg-slate-950 border-b border-slate-800"><th class="px-8 py-4 text-[10px] font-black uppercase text-slate-500">Query</th><th class="px-8 py-4 text-[10px] font-black uppercase text-slate-500">Results</th><th class="px-8 py-4 text-[10px] font-black uppercase text-slate-500">Status</th><th class="px-8 py-4 text-right"></th></tr></thead>
                     <tbody class="divide-y divide-slate-800/50">
-                        {% if stats.queries %}
-                            {% for item in stats.queries %}
-                            <tr class="hover:bg-slate-800/20 transition-colors group">
-                                <td class="px-8 py-5 text-xs mono text-slate-600">{{ item.timestamp }}</td>
-                                <td class="px-8 py-5">
-                                    <span class="text-sm font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">{{ item.query }}</span>
-                                </td>
-                                <td class="px-8 py-5">
-                                    <span class="text-[10px] font-bold text-slate-500 bg-slate-800 px-2 py-1 rounded-md">{{ item.result_count }} Nodes</span>
-                                </td>
-                                <td class="px-8 py-5">
-                                    {% if item.rejection_score > 0 %}
-                                        <span class="text-[10px] font-bold text-rose-400 bg-rose-400/10 border border-rose-400/20 px-2 py-1 rounded-md">
-                                            {{ item.rejection_score }} Rejections
-                                        </span>
-                                    {% else %}
-                                        <span class="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md italic">Optimized</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-8 py-5 text-right">
-                                    <form action="/admin/delete-query" method="POST" class="inline">
-                                        <input type="hidden" name="query" value="{{ item.query }}">
-                                        <button class="p-2 text-slate-600 hover:text-rose-400 transition-colors" title="Delete record">
-                                            <i data-lucide="trash-2" size="16"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="5" class="p-16 text-center">
-                                    <div class="flex flex-col items-center gap-4 opacity-20">
-                                        <i data-lucide="database-zap" size="48"></i>
-                                        <p class="text-sm font-black uppercase tracking-[0.2em]">Semantic storage empty</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endif %}
+                        {% for item in stats.queries %}<tr class="hover:bg-slate-800/20 transition-colors">
+                            <td class="px-8 py-5 text-sm font-bold text-slate-200">{{ item.query }}</td>
+                            <td class="px-8 py-5 text-[10px] font-bold text-slate-500">{{ item.result_count }} Nodes</td>
+                            <td class="px-8 py-5">{% if item.rejection_score > 0 %}<span class="text-[10px] font-bold text-rose-400">Rejections: {{ item.rejection_score }}</span>{% else %}<span class="text-[10px] font-bold text-emerald-500 italic">Optimized</span>{% endif %}</td>
+                            <td class="px-8 py-5 text-right"><form action="/admin/delete-query" method="POST" class="inline"><input type="hidden" name="query" value="{{ item.query }}"><button class="text-slate-600 hover:text-rose-400"><i data-lucide="trash-2" size="16"></i></button></form></td>
+                        </tr>{% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Engine Config Panel -->
+        <div id="panel-config" class="admin-panel hidden space-y-6">
+            <div class="max-w-2xl bg-slate-900/50 border border-slate-800 p-8 rounded-3xl">
+                <h2 class="text-slate-100 text-lg font-black uppercase tracking-widest mb-6">Search Providers</h2>
+                <div id="engine-admin-list" class="space-y-4"></div>
+                <button onclick="saveAdminEngines()" id="save-engines-btn" class="mt-8 bg-cyan-500 text-slate-950 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Update Providers</button>
+            </div>
+        </div>
+
+        <!-- Synthesis Panel -->
+        <div id="panel-synthesis" class="admin-panel hidden space-y-6">
+            <div class="max-w-2xl bg-slate-900/50 border border-slate-800 p-8 rounded-3xl">
+                <h2 class="text-slate-100 text-lg font-black uppercase tracking-widest mb-6">LLM Configuration</h2>
+                <div class="space-y-6">
+                    <div><label class="form-label">Provider</label><select id="llm-provider" class="form-select" onchange="toggleLLMFields()"><option value="ollama">Ollama</option><option value="llama_cpp">Llama.cpp</option></select></div>
+                    <div><label class="form-label">Base URL</label><input type="text" id="llm-base-url" class="form-input"></div>
+                    <div id="llm-model-container"><label class="form-label">Model Name</label><input type="text" id="llm-model" class="form-input"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="form-label">Temperature</label><input type="number" id="llm-temp" class="form-input" step="0.1"></div>
+                        <div><label class="form-label">Max Tokens</label><input type="number" id="llm-max-tokens" class="form-input"></div>
+                    </div>
+                </div>
+                <button onclick="saveAdminLLM()" id="save-llm-btn" class="mt-8 bg-cyan-500 text-slate-950 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Save Synthesis Config</button>
+            </div>
+        </div>
+
+        <!-- Models Panel -->
+        <div id="panel-models" class="admin-panel hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div>
+                    <h2 class="text-slate-100 text-lg font-black uppercase tracking-widest mb-6">Embedding Catalog</h2>
+                    <div id="models-admin-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-4 no-scrollbar"></div>
+                    <div class="p-5 bg-amber-500/5 border border-amber-500/20 rounded-2xl mt-8">
+                        <p class="text-[10px] text-amber-500 font-bold uppercase leading-relaxed">
+                            Warning: Changing models will reset existing semantic cache indices.
+                        </p>
+                    </div>
+                    <button onclick="saveAdminModel()" id="save-models-btn" class="mt-8 bg-cyan-500 text-slate-950 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Switch Embedding Space</button>
+                </div>
+                
+                <div class="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl h-fit">
+                    <h2 class="text-slate-100 text-lg font-black uppercase tracking-widest mb-6">Register Custom Model</h2>
+                    <div class="space-y-4">
+                        <div><label class="form-label">HuggingFace ID / Path</label><input type="text" id="new-model-id" class="form-input" placeholder="sentence-transformers/all-distilroberta-v1"></div>
+                        <div><label class="form-label">Display Name</label><input type="text" id="new-model-name" class="form-input" placeholder="DistilRoberta"></div>
+                        <div><label class="form-label">Description</label><input type="text" id="new-model-desc" class="form-input" placeholder="Fast and accurate RoBERTa model."></div>
+                        <div><label class="form-label">Dimensions</label><input type="number" id="new-model-dim" class="form-input" placeholder="768"></div>
+                    </div>
+                    <button onclick="addCustomModel()" id="add-model-btn" class="mt-8 w-full border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Add to Catalog</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
+        let engineConfig = {};
+        let llmConfig = {};
+        let appConfig = {};
+        let modelsCatalog = {};
+        let currentModel = '';
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('panel-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if (tabId !== 'memory') loadAdminData();
+        }
+
+        async function loadAdminData() {
+            try {
+                const [engRes, llmRes, modRes, appRes] = await Promise.all([
+                    fetch('/api/config/engines'),
+                    fetch('/api/admin/config/llm'),
+                    fetch('/api/admin/models/catalog'),
+                    fetch('/api/admin/config/app')
+                ]);
+                engineConfig = await engRes.json();
+                llmConfig = await llmRes.json();
+                appConfig = await appRes.json();
+                const modData = await modRes.json();
+                modelsCatalog = modData.catalog;
+                currentModel = modData.current;
+                renderAll();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderAll() {
+            // Render Kernel
+            document.getElementById('kernel-hyde').checked = appConfig.USE_HYDE;
+            document.getElementById('kernel-max-results').value = appConfig.MAX_RESULTS_PER_ENGINE;
+            document.getElementById('kernel-penalty').value = appConfig.REJECTION_PENALTY_WEIGHT;
+            document.getElementById('kernel-ttl').value = appConfig.CACHE_TTL_DAYS;
+
+            // Render Engines
+            document.getElementById('engine-admin-list').innerHTML = Object.entries(engineConfig).map(([id, cfg]) => `
+                <div class="flex items-center justify-between p-4 bg-slate-950/50 border border-slate-800 rounded-2xl">
+                    <span class="text-xs font-bold text-slate-200 uppercase tracking-widest">${id}</span>
+                    <input type="checkbox" ${cfg.enabled ? 'checked' : ''} onchange="engineConfig['${id}'].enabled = this.checked" class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-cyan-500">
+                </div>
+            `).join('');
+
+            // Render LLM
+            document.getElementById('llm-provider').value = llmConfig.provider;
+            document.getElementById('llm-base-url').value = llmConfig.base_url;
+            document.getElementById('llm-model').value = llmConfig.model;
+            document.getElementById('llm-temp').value = llmConfig.temperature;
+            document.getElementById('llm-max-tokens').value = llmConfig.max_tokens;
+            toggleLLMFields();
+
+            // Render Models
+            document.getElementById('models-admin-list').innerHTML = Object.entries(modelsCatalog).map(([id, cfg]) => `
+                <div onclick="currentModel='${id}'; renderAll()" class="model-card ${currentModel === id ? 'active' : ''}">
+                    <div class="flex justify-between items-start">
+                        <div><h3 class="text-xs font-black text-slate-100 uppercase tracking-widest">${cfg.name}</h3><p class="text-[10px] text-slate-500 mt-1">${cfg.description}</p></div>
+                        <span class="text-[9px] font-mono text-cyan-500/50">${cfg.dimension}d</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function saveAdminSearch() {
+            const b = document.getElementById('save-kernel-btn'); b.innerText = 'SAVING...';
+            const newConfig = {
+                ...appConfig,
+                USE_HYDE: document.getElementById('kernel-hyde').checked,
+                MAX_RESULTS_PER_ENGINE: parseInt(document.getElementById('kernel-max-results').value),
+                REJECTION_PENALTY_WEIGHT: parseFloat(document.getElementById('kernel-penalty').value),
+                CACHE_TTL_DAYS: parseInt(document.getElementById('kernel-ttl').value)
+            };
+            await fetch('/api/admin/config/app', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newConfig) });
+            appConfig = newConfig;
+            b.innerText = 'SUCCESS'; setTimeout(() => b.innerText='Update Search Config', 2000);
+        }
+
+        function toggleLLMFields() {
+            const p = document.getElementById('llm-provider').value;
+            document.getElementById('llm-model-container').style.opacity = p === 'llama_cpp' ? '0.3' : '1';
+        }
+
+        async function saveAdminEngines() {
+            const b = document.getElementById('save-engines-btn'); b.innerText = 'SAVING...';
+            await fetch('/api/config/engines', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(engineConfig) });
+            b.innerText = 'SUCCESS'; setTimeout(() => b.innerText='Update Providers', 2000);
+        }
+
+        async function saveAdminLLM() {
+            const b = document.getElementById('save-llm-btn'); b.innerText = 'SAVING...';
+            llmConfig = { provider: document.getElementById('llm-provider').value, base_url: document.getElementById('llm-base-url').value, model: document.getElementById('llm-model').value, temperature: parseFloat(document.getElementById('llm-temp').value), max_tokens: parseInt(document.getElementById('llm-max-tokens').value) };
+            await fetch('/api/admin/config/llm', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(llmConfig) });
+            b.innerText = 'SUCCESS'; setTimeout(() => b.innerText='Save Synthesis Config', 2000);
+        }
+
+        async function saveAdminModel() {
+            const b = document.getElementById('save-models-btn'); b.innerText = 'SAVING...';
+            await fetch('/api/admin/models/select', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({model_name: currentModel}) });
+            b.innerText = 'SUCCESS'; setTimeout(() => b.innerText='Switch Embedding Space', 2000);
+        }
+
+        async function addCustomModel() {
+            const b = document.getElementById('add-model-btn');
+            const data = {
+                model_id: document.getElementById('new-model-id').value,
+                name: document.getElementById('new-model-name').value,
+                description: document.getElementById('new-model-desc').value,
+                dimension: parseInt(document.getElementById('new-model-dim').value)
+            };
+            if (!data.model_id || !data.name || !data.dimension) return alert("Fill all required fields.");
+            b.innerText = 'ADDING...';
+            const res = await fetch('/api/admin/models/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            if (res.ok) {
+                b.innerText = 'ADDED';
+                setTimeout(() => { b.innerText='Add to Catalog'; loadAdminData(); }, 2000);
+                document.getElementById('new-model-id').value = '';
+                document.getElementById('new-model-name').value = '';
+                document.getElementById('new-model-desc').value = '';
+                document.getElementById('new-model-dim').value = '';
+            } else b.innerText = 'ERROR';
+        }
     </script>
 </body>
 </html>

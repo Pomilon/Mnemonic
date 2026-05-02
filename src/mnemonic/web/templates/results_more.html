@@ -6,7 +6,7 @@
 <div id="load-more-container" hx-swap-oob="true" class="py-12 flex justify-center border-t border-slate-900 mt-12">
     {% if results|length > 0 %}
     <button hx-post="/search" 
-            hx-vals='{"query": "{{ query }}", "offset": {{ next_offset }}}'
+            hx-vals='{"query": "{{ query }}", "offset": {{ next_offset }}, "category": "{{ category }}"}'
             hx-target="#results-grid"
             hx-swap="beforeend"
             hx-indicator="#load-more-spinner"

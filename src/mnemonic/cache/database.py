@@ -52,34 +52,19 @@ class SemanticCache:
         self.table.add([data])
 
     def mark_rejection(self, query: str, vector: List[float]):
-        # Find the most recent entry for this query/vector and increment rejection score
-        # In LanceDB, we might need to overwrite or just add a new entry with high rejection
-        # For simplicity in this prototype, we'll update the most recent one if possible, 
-        # but LanceDB table.update is more complex. We'll just add a new "negative" entry or 
-        # increment rejection_score for matches.
-        
-        # Actually, let's just find the ID or use a filter
-        results = self.table.search(vector).limit(1).to_pandas()
-        if not results.empty:
-            # We can't easily 'update' a single row by index in a simple way with LanceDB's basic API
-            # without a primary key. Let's assume we use the query string as a semi-unique identifier for now
-            # or just filter by distance.
-            
-            # For this prototype, we'll use the 'delete and re-add' pattern if we want to update
-            escaped_query = query.replace("'", "''")
-            self.table.delete(f"query = '{escaped_query}'")
-            
-            # Re-add with incremented rejection score
-            import json
-            data = {
-                "vector": vector,
-                "query": query,
-                "results_json": results.iloc[0]["results_json"],
-                "rejection_score": int(results.iloc[0]["rejection_score"]) + 1,
-                "timestamp": datetime.now(),
-                "metadata": results.iloc[0]["metadata"]
-            }
-            self.table.add([data])
+        # Instead of deleting, we just add a high-rejection entry for this vector
+        # This acts as a 'negative' marker in the vector space
+        import json
+        # We don't need results here, just the marker
+        data = {
+            "vector": vector,
+            "query": query,
+            "results_json": "[]", 
+            "rejection_score": 10, # High score to indicate a strong rejection
+            "timestamp": datetime.now(),
+            "metadata": "rejection_marker"
+        }
+        self.table.add([data])
 
     def get_results_by_vector(self, vector: List[float]):
         results = self.table.search(vector).limit(1).to_pandas()
@@ -96,25 +81,35 @@ class SemanticCache:
         self.db.drop_table(self.table_name)
         self.table = self.db.create_table(self.table_name, schema=schema)
 
+    def get_rejection_markers(self, vector: List[float], limit: int = 5) -> List[List[float]]:
+        # Search for nearby rejections
+        # We filter for rejection_score > 0
+        results = self.table.search(vector).where("rejection_score > 0").limit(limit).to_pandas()
+        if results.empty:
+            return []
+        
+        return results["vector"].tolist()
+
     def query_cache(self, vector: List[float], distance_threshold: float = config.CACHE_DISTANCE_THRESHOLD, rejection_threshold: int = config.CACHE_REJECTION_THRESHOLD, ttl_days: int = config.CACHE_TTL_DAYS):
-        # Search for the nearest query
-        results = self.table.search(vector).limit(1).to_pandas()
+        # Search for the top few nearest queries to check for rejections
+        results = self.table.search(vector).limit(5).to_pandas()
         
         if results.empty:
             return None
             
-        # Check distance
-        distance = results.iloc[0]["_distance"]
+        # Check if any of the nearest entries are strong rejections
+        for _, row in results.iterrows():
+            if int(row["rejection_score"]) >= rejection_threshold:
+                return None
+        
+        # Now check the closest entry for actual results
+        closest = results.iloc[0]
+        distance = closest["_distance"]
         if distance > distance_threshold:
             return None
             
-        # Check rejection score
-        if int(results.iloc[0]["rejection_score"]) >= rejection_threshold:
-            return None
-            
         # Check TTL
-        timestamp = results.iloc[0]["timestamp"]
-        # Convert timestamp to datetime if it's not already
+        timestamp = closest["timestamp"]
         if isinstance(timestamp, pd.Timestamp):
             age = (datetime.now() - timestamp.to_pydatetime()).days
         else:
@@ -124,13 +119,15 @@ class SemanticCache:
             return None
             
         import json
-        cached_results_raw = json.loads(results.iloc[0]["results_json"])
+        cached_results_raw = json.loads(closest["results_json"])
+        if not cached_results_raw:
+            return None
         
         # Convert back to SearchResult objects
         cached_results = [SearchResult(**res) for res in cached_results_raw]
         
         return {
-            "query": results.iloc[0]["query"],
+            "query": closest["query"],
             "results": cached_results,
             "distance": float(distance)
         }

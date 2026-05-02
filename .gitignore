@@ -45,3 +45,7 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Configs
+src/mnemonic/aggregator/*.json
+!src/mnemonic/aggregator/*.json.example

@@ -40,18 +40,21 @@ Mnemonic is a semantic search middleware that transforms raw web data into a vec
 - `pip install -r requirements.txt`
 
 ### Configuration
-Mnemonic is highly configurable. You can use either a `.env` file or a `config.json` file in the root directory.
+Mnemonic uses a dual-configuration system to balance security and flexibility:
 
-```bash
-cp .env.example .env
-# OR
-cp config.json.example config.json
-```
+1.  **System Config (`.env`)**: Used for sensitive secrets and API keys.
+    ```bash
+    cp .env.example .env
+    ```
+2.  **App Config (`src/mnemonic/aggregator/*.json`)**: Used for operational settings (Search, Synthesis, Models). These can be updated live via the **Admin Dashboard**.
+    *   `app_config.json`: General search and cache parameters.
+    *   `llm_config.json`: Synthesis provider and model settings.
+    *   `engines.json`: Search engine toggles.
 
-**Key Configs:**
-- `MNEMONIC_ADMIN_TOKEN`: Secure token for the admin dashboard.
-- `OLLAMA_MODEL`: The model name to use for synthesis (e.g., `llama3`).
-- `MAX_RESULTS_PER_ENGINE`: Number of nodes to pull per search pass.
+**Key Settings:**
+- `MNEMONIC_ADMIN_TOKEN`: Secure token for the admin dashboard (set in `.env`).
+- `BRAVE_API_KEY`: API key for Brave Search provider (set in `.env`).
+- `USE_HYDE`: Toggle hypothetical document expansion (set in Search Settings).
 - `CACHE_TTL_DAYS`: How long results remain in semantic memory.
 
 ### Running with Docker (Recommended)
